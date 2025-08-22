@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>School Days Countdown</title>
+  <meta name="theme-color" content="#f6f6f6">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root { --fg:#111; --muted:#4a4a4a; --bg:#f6f6f6; }
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial;}
+    .wrap{max-width:860px;margin:0 auto;padding:24px}
+    h1{font-size:clamp(40px,12vw,120px);margin:10px 0 8px;font-weight:800;line-height:0.9}
+    .muted{color:var(--muted)}
+    .row{margin:10px 0 14px;font-size:clamp(16px,2.8vw,22px)}
+    .small{font-size:14px;margin-top:20px}
+    .btns{display:flex;gap:10px;margin-top:10px}
+    button{font-size:16px;padding:8px 14px;border-radius:10px;border:1px solid #ddd;background:#fff;cursor:pointer}
+    button:active{transform:translateY(1px)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 id="count"></h1>
+    <div class="row" id="today"></div>
+    <div class="row" id="next"></div>
+    <div class="btns">
+      <button id="refreshBtn">Refresh now</button>
+      <button id="copyBtn">Copy details</button>
+    </div>
+    <div class="small muted" id="range"></div>
+  </div>
+
+<script>
+const FIRST_DAY = new Date(2025, 7, 12); // Aug 12, 2025
+const LAST_DAY  = new Date(2026, 4, 21); // May 21, 2026
+const NON_ATTENDANCE = [
+  ["Teacher Institute",      2025,7,11,  2025,7,11],
+  ["Labor Day",              2025,8,1,   2025,8,1 ],
+  ["Indigenous Peoples Day", 2025,9,13,  2025,9,13],
+  ["Teacher Institute",      2025,9,31,  2025,9,31],
+  ["Thanksgiving Break",     2025,10,26, 2025,10,28],
+  ["Winter Break",           2025,11,22, 2026,0,2 ],
+  ["Martin Luther King Day", 2026,0,19,  2026,0,19],
+  ["Presidents’ Day",        2026,1,16,  2026,1,16],
+  ["Teacher Institute",      2026,2,13,  2026,2,13],
+  ["Spring Break",           2026,2,30,  2026,3,3 ],
+];
+
+const oneDay = 24*60*60*1000;
+const iso = d => d.toLocaleDateString(undefined,{weekday:'long', month:'short', day:'2-digit', year:'numeric'});
+const shortMD = d => d.toLocaleDateString(undefined,{month:'short', day:'2-digit'});
+
+function* dateRange(start, end){
+  const s = new Date(start); s.setHours(0,0,0,0);
+  const e = new Date(end);   e.setHours(0,0,0,0);
+  for(let t = s.getTime(); t <= e.getTime(); t += oneDay){
+    const d = new Date(t);
+    d.setHours(0,0,0,0);
+    yield d;
+  }
+}
+function isWeekday(d){ return d.getDay() >= 1 && d.getDay() <= 5; }
+
+function buildNonAttendanceMap(){
+  const m = new Map();
+  for(const [label, sy, sm, sd, ey, em, ed] of NON_ATTENDANCE){
+    const s = new Date(sy, sm, sd), e = new Date(ey, em, ed);
+    for(const d of dateRange(s,e)) m.set(+d, label);
+  }
+  return m;
+}
+
+function allSchoolDays(){
+  const na = buildNonAttendanceMap();
+  const days = [];
+  for(const d of dateRange(FIRST_DAY, LAST_DAY)){
+    if(isWeekday(d) && !na.has(+d)) days.push(new Date(d));
+  }
+  return days;
+}
+
+function remainingSchoolDays(today = new Date()){
+  today.setHours(0,0,0,0);
+  return allSchoolDays().filter(d => d.getTime() >= today.getTime()).length;
+}
+
+function todayStatus(today = new Date()){
+  today.setHours(0,0,0,0);
+  const na = buildNonAttendanceMap();
+  if(today < FIRST_DAY) return ["Not started", null];
+  if(today > LAST_DAY)  return ["Completed", null];
+  const key = +today;
+  if(na.has(key)) return [`No school: ${na.get(key)}`, na.get(key)];
+  if(!isWeekday(today)) return ["No school: Weekend", "Weekend"];
+  return ["School day", null];
+}
+
+function nextBreak(today = new Date()){
+  today.setHours(0,0,0,0);
+  const na = buildNonAttendanceMap();
+  const start = new Date(Math.max(today, FIRST_DAY));
+  for(const d of dateRange(start, LAST_DAY)){
+    const key = +d;
+    if(na.has(key)){
+      const label = na.get(key);
+      let end = new Date(d);
+      for(const f of dateRange(new Date(+d+oneDay), LAST_DAY)){
+        if(na.get(+f) === label){ end = f; } else { break; }
+      }
+      return [d, end, label];
+    }
+  }
+  return null;
+}
+
+function render(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const countEl = document.getElementById('count');
+  const todayEl = document.getElementById('today');
+  const nextEl  = document.getElementById('next');
+  const rangeEl = document.getElementById('range');
+
+  countEl.textContent = `${remainingSchoolDays(today)} school days left`;
+
+  const [status] = todayStatus(today);
+  todayEl.textContent = `Today: ${status}  (${iso(today)})`;
+
+  const nb = nextBreak(today);
+  if(nb){
+    const [s,e,label] = nb;
+    nextEl.textContent = (s.getTime()===e.getTime())
+      ? `Next break: ${label} on ${iso(s).replace(/, \d{4}$/,'')}`
+      : `Next break: ${label} (${shortMD(s)}–${shortMD(e)})`;
+  } else {
+    nextEl.textContent = "Next break: None — approaching the end of the year";
+  }
+  rangeEl.textContent = `School year: ${iso(FIRST_DAY).replace(/, \d{4}$/,'')} — ${iso(LAST_DAY).replace(/^[A-Za-z]+, /,'')}`;
+}
+
+document.getElementById('refreshBtn').addEventListener('click', render);
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const rem = remainingSchoolDays(today);
+  const [status] = todayStatus(today);
+  const nb = nextBreak(today);
+  let lines = [
+    `${rem} school days left`,
+    `Today: ${status} (${iso(today)})`,
+    `School year: ${iso(FIRST_DAY)} to ${iso(LAST_DAY)}`
+  ];
+  if(nb){
+    const [s,e,label] = nb;
+    lines.splice(2,0,(s.getTime()===e.getTime())
+      ? `Next break: ${label} on ${iso(s)}`
+      : `Next break: ${label} from ${iso(s)} to ${iso(e)}`
+    );
+  }
+  navigator.clipboard?.writeText(lines.join("\n"));
+});
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+render();
+</script>
+</body>
+</html>
