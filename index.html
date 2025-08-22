@@ -32,10 +32,7 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.18);
       padding:26px;
     }
-    h1{
-      font-size:clamp(34px,6.8vw,84px);
-      line-height:1.02;margin:0 0 8px;font-weight:900;letter-spacing:-0.02em;
-    }
+    h1{font-size:clamp(34px,6.8vw,84px); line-height:1.02;margin:0 0 8px;font-weight:900;letter-spacing:-0.02em;}
     .sub{font-size:clamp(16px,2.8vw,22px); color:#0b1220; opacity:.95}
     .muted{color:var(--muted)}
     .grid{display:grid;grid-template-columns:1fr 1fr; gap:14px; margin-top:10px}
@@ -107,7 +104,6 @@ const SCHEDULE = [
   { id:"09", label:"Period 09", start:[14,41], end:[15,23], include:true },
 ];
 
-// Only count your sections? Put IDs here; otherwise all include:true are counted.
 const INCLUDE_ONLY = null;
 
 /* ===== Helpers ===== */
@@ -142,8 +138,14 @@ function allSchoolDays(){
   return days;
 }
 function remainingSchoolDays(today = new Date()){
+  // includes today if it's a school day
   today.setHours(0,0,0,0);
   return allSchoolDays().filter(d => d.getTime() >= today.getTime()).length;
+}
+function fullDaysAfterToday(today = new Date()){
+  // strictly after today
+  today.setHours(0,0,0,0);
+  return allSchoolDays().filter(d => d.getTime() > today.getTime()).length;
 }
 function todayStatus(today = new Date()){
   today.setHours(0,0,0,0);
@@ -175,23 +177,10 @@ function nextUpcomingPeriod(now = new Date()){
   const upcoming = sched.find(p => p._count && p.endDate.getTime() > now.getTime());
   return upcoming || null;
 }
-function totalRemainingPeriods(now = new Date()){
-  now.setSeconds(0,0);
-  const today = new Date(now); today.setHours(0,0,0,0);
-  const days = allSchoolDays();
-  const perDay = countedPeriodsPerDay();
-  const futureDays = days.filter(d => d.getTime() > today.getTime()).length;
-  let total = futureDays * perDay;
-  const [status] = todayStatus(today);
-  if(status === "School day"){
-    total += remainingPeriodsToday(now);
-  } else if(status === "Not started"){
-    total = days.length * perDay;
-  }
-  return total;
-}
 
 /* ===== UI ===== */
+function plural(n, s, p){ return `${n} ${n===1?s:p}`; }
+
 function buildChips(now = new Date()){
   const chips = document.getElementById('chips');
   chips.innerHTML = "";
@@ -212,9 +201,10 @@ function render(){
   const now = new Date(); now.setSeconds(0,0);
   const today = new Date(now); today.setHours(0,0,0,0);
 
-  const days = remainingSchoolDays(today);
-  const periods = totalRemainingPeriods(now);
-  document.getElementById('topline').textContent = `${days} school days and ${periods} periods left`;
+  // Top line: days including today + periods left today only
+  const daysInclToday = remainingSchoolDays(today);
+  const periodsToday  = (todayStatus(today)[0] === "School day") ? remainingPeriodsToday(now) : 0;
+  document.getElementById('topline').textContent = `${plural(daysInclToday,'day','days')} and ${plural(periodsToday,'period','periods')} left`;
 
   const [status] = todayStatus(today);
   document.getElementById('today').textContent = `Today: ${status}  (${iso(today)})`;
@@ -240,7 +230,7 @@ function render(){
 
   // Today's summary
   const perDay = countedPeriodsPerDay();
-  const remToday = (status === "School day") ? remainingPeriodsToday(now) : 0;
+  const remToday = periodsToday;
   const np = nextUpcomingPeriod(now);
   const nextTxt = np ? `Next: ${np.label} ${np.startDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}–${np.endDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`
                      : "No more periods today";
@@ -255,14 +245,14 @@ document.getElementById('refreshBtn').addEventListener('click', render);
 document.getElementById('copyBtn').addEventListener('click', () => {
   const now = new Date(); now.setSeconds(0,0);
   const today = new Date(now); today.setHours(0,0,0,0);
+  const daysInclToday = remainingSchoolDays(today);
+  const periodsToday  = (todayStatus(today)[0] === "School day") ? remainingPeriodsToday(now) : 0;
   const lines = [];
-  lines.push(document.getElementById('topline').textContent);
+  lines.push(`${daysInclToday} days and ${periodsToday} periods left`);
   const [status] = todayStatus(today);
   const perDay = countedPeriodsPerDay();
-  const remToday = (status === "School day") ? remainingPeriodsToday(now) : 0;
   lines.push(`Today: ${status} (${iso(today)})`);
-  lines.push(`Remaining today: ${remToday} of ${perDay}`);
-  lines.push(document.getElementById('next').textContent);
+  lines.push(`Remaining today: ${periodsToday} of ${perDay}`);
   lines.push(document.getElementById('range').textContent);
   navigator.clipboard?.writeText(lines.join("\n"));
 });
