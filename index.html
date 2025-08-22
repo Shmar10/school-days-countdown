@@ -3,45 +3,38 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>School Days & Periods Countdown</title>
-  <meta name="theme-color" content="#0ea5e9">
+  <title>NN Vikings — School Days & Periods</title>
+  <meta name="theme-color" content="#6b21a8">
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
   <style>
     :root {
-      --bg1:#0ea5e9; --bg2:#22c55e; --fg:#0b1220; --muted:#576172; --card:#ffffffaa; --border:#ffffff55;
-      --chip:#ffffffb8; --chipText:#0b1220; --chipPast:#e2e8f0; --chipNow:#fde68a;
+      --bg1:#6b21a8; --bg2:#9333ea; --fg:#0b1220; --muted:#434c5e; --card:#ffffffcc; --border:#ffffff66;
+      --chip:#ffffffb8; --chipText:#0b1220; --chipPast:#eceaf5; --chipNow:#fde68a;
     }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial}
-    /* animated gradient background */
     body{
       background: linear-gradient(135deg,var(--bg1),var(--bg2));
       background-size: 200% 200%;
-      animation: hue 14s ease infinite;
+      animation: hue 16s ease-in-out infinite;
       color:var(--fg);
     }
-    @keyframes hue{
-      0%{background-position:0% 50%}
-      50%{background-position:100% 50%}
-      100%{background-position:0% 50%}
-    }
-    /* glass card */
+    @keyframes hue{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
     .wrap{max-width:1000px;margin:0 auto;padding:28px}
+    .brand{color:#fff;letter-spacing:.08em;font-weight:800;text-transform:uppercase;margin:0 0 10px;opacity:.9}
     .card{
       background: var(--card);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border:1px solid var(--border);
       border-radius:22px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.18);
       padding:26px;
     }
     h1{
       font-size:clamp(34px,6.8vw,84px);
-      line-height:1.02;
-      margin:0 0 8px;
-      font-weight:900;
-      letter-spacing:-0.02em;
+      line-height:1.02;margin:0 0 8px;font-weight:900;letter-spacing:-0.02em;
     }
     .sub{font-size:clamp(16px,2.8vw,22px); color:#0b1220; opacity:.95}
     .muted{color:var(--muted)}
@@ -60,6 +53,7 @@
 </head>
 <body>
   <div class="wrap">
+    <h3 class="brand">NN Vikings</h3>
     <div class="card">
       <h1 id="topline">Loading…</h1>
       <div class="grid">
@@ -82,10 +76,8 @@
 /* =====================
    CALENDAR SETTINGS
    ===================== */
-const FIRST_DAY = new Date(2025, 7, 12); // Aug 12, 2025 (0-based month)
+const FIRST_DAY = new Date(2025, 7, 12); // Aug 12, 2025
 const LAST_DAY  = new Date(2026, 4, 21); // May 21, 2026
-
-// [label, startY,M,D, endY,M,D] (inclusive)
 const NON_ATTENDANCE = [
   ["Teacher Institute",      2025,7,11,  2025,7,11],
   ["Labor Day",              2025,8,1,   2025,8,1 ],
@@ -115,8 +107,7 @@ const SCHEDULE = [
   { id:"09", label:"Period 09", start:[14,41], end:[15,23], include:true },
 ];
 
-// If you only want to count certain periods (your teaching sections), list their IDs.
-// e.g., const INCLUDE_ONLY = ["01","03","05"];  Set to null to count all with include:true.
+// Only count your sections? Put IDs here; otherwise all include:true are counted.
 const INCLUDE_ONLY = null;
 
 /* ===== Helpers ===== */
@@ -133,7 +124,7 @@ function* dateRange(start, end){
     yield d;
   }
 }
-function isWeekday(d){ return d.getDay() >= 1 && d.getDay() <= 5; } // Mon–Fri
+function isWeekday(d){ return d.getDay() >= 1 && d.getDay() <= 5; }
 function buildNonAttendanceMap(){
   const m = new Map();
   for(const [label, sy, sm, sd, ey, em, ed] of NON_ATTENDANCE){
@@ -169,12 +160,7 @@ function todayStatus(today = new Date()){
 function scheduleForDate(baseDate){
   const y = baseDate.getFullYear(), m = baseDate.getMonth(), d = baseDate.getDate();
   const useOnly = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
-  return SCHEDULE.map(p => ({
-    ...p,
-    startDate: new Date(y, m, d, p.start[0], p.start[1]),
-    endDate:   new Date(y, m, d, p.end[0],   p.end[1]),
-    _count: useOnly ? useOnly.has(p.id) : !!p.include
-  }));
+  return SCHEDULE.map(p => ({ ...p, startDate: new Date(y,m,d,p.start[0],p.start[1]), endDate: new Date(y,m,d,p.end[0],p.end[1]), _count: useOnly ? useOnly.has(p.id) : !!p.include }));
 }
 function countedPeriodsPerDay(){
   const useOnly = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
