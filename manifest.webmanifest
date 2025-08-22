@@ -1,6 +1,6 @@
 {
-  "name": "School Days Countdown",
-  "short_name": "School Days",
+  "name": "School Days & Periods",
+  "short_name": "Days & Periods",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f6f6f6",

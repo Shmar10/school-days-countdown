@@ -3,27 +3,38 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>School Days Countdown</title>
+  <title>School Days & Periods Countdown</title>
   <meta name="theme-color" content="#f6f6f6">
   <link rel="manifest" href="manifest.webmanifest">
   <style>
     :root { --fg:#111; --muted:#4a4a4a; --bg:#f6f6f6; }
     html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial;}
-    .wrap{max-width:860px;margin:0 auto;padding:24px}
-    h1{font-size:clamp(40px,12vw,120px);margin:10px 0 8px;font-weight:800;line-height:0.9}
+    .wrap{max-width:920px;margin:0 auto;padding:24px}
+    h1{font-size:clamp(36px,10vw,104px);margin:6px 0 2px;font-weight:800;line-height:0.9}
+    h2{font-size:clamp(26px,6.5vw,72px);margin:2px 0 10px;font-weight:800;line-height:0.95}
     .muted{color:var(--muted)}
     .row{margin:10px 0 14px;font-size:clamp(16px,2.8vw,22px)}
-    .small{font-size:14px;margin-top:20px}
-    .btns{display:flex;gap:10px;margin-top:10px}
+    .small{font-size:14px;margin-top:18px}
+    .btns{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
     button{font-size:16px;padding:8px 14px;border-radius:10px;border:1px solid #ddd;background:#fff;cursor:pointer}
     button:active{transform:translateY(1px)}
+    .grid{display:grid;grid-template-columns: 1fr 1fr;gap:12px}
+    @media (max-width:720px){ .grid{grid-template-columns:1fr;}}
+    .pill{display:inline-block;padding:4px 10px;border:1px solid #ddd;border-radius:999px;font-size:14px;margin-left:8px}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1 id="count"></h1>
-    <div class="row" id="today"></div>
-    <div class="row" id="next"></div>
+    <h1 id="daysCount"></h1>
+    <h2 id="periodsCount"></h2>
+
+    <div class="grid">
+      <div class="row" id="today"></div>
+      <div class="row" id="next"></div>
+    </div>
+
+    <div class="row" id="todayPeriods"></div>
+
     <div class="btns">
       <button id="refreshBtn">Refresh now</button>
       <button id="copyBtn">Copy details</button>
@@ -32,8 +43,13 @@
   </div>
 
 <script>
-const FIRST_DAY = new Date(2025, 7, 12); // Aug 12, 2025
+/* =====================
+   CALENDAR SETTINGS
+   ===================== */
+const FIRST_DAY = new Date(2025, 7, 12); // Aug 12, 2025 (0-based month)
 const LAST_DAY  = new Date(2026, 4, 21); // May 21, 2026
+
+// [label, startY,M,D, endY,M,D] (inclusive)
 const NON_ATTENDANCE = [
   ["Teacher Institute",      2025,7,11,  2025,7,11],
   ["Labor Day",              2025,8,1,   2025,8,1 ],
@@ -47,6 +63,32 @@ const NON_ATTENDANCE = [
   ["Spring Break",           2026,2,30,  2026,3,3 ],
 ];
 
+/* =====================
+   BELL SCHEDULE
+   =====================
+   Use 24-hour clock: [hour, minute].
+   Set include:true for periods to count. (Default here excludes Homeroom.)
+   You can also limit to your own sections by listing only those IDs.
+*/
+const SCHEDULE = [
+  { id:"01", label:"Period 01", start:[8,10],  end:[8,52],  include:true },
+  { id:"02", label:"Period 02", start:[8,57],  end:[9,39],  include:true },
+  { id:"03", label:"Period 03", start:[9,44],  end:[10,26], include:true },
+  { id:"HR", label:"Homeroom",  start:[10,31], end:[10,41], include:false },
+  { id:"04", label:"Period 04", start:[10,46], end:[11,28], include:true },
+  { id:"05", label:"Period 05", start:[11,33], end:[12,15], include:true },
+  { id:"06", label:"Period 06", start:[12,20], end:[13,2],  include:true },
+  { id:"07", label:"Period 07", start:[13,7],  end:[13,49], include:true },
+  { id:"08", label:"Period 08", start:[13,54], end:[14,36], include:true },
+  { id:"09", label:"Period 09", start:[14,41], end:[15,23], include:true },
+];
+
+/* If you only want to count certain periods (e.g., the ones you teach),
+   put their IDs here and those will be used instead of 'include:true'. */
+// const INCLUDE_ONLY = ["01","03","05","07"]; // <-- example; comment out to count all included periods
+const INCLUDE_ONLY = null;
+
+/* ===== Helpers ===== */
 const oneDay = 24*60*60*1000;
 const iso = d => d.toLocaleDateString(undefined,{weekday:'long', month:'short', day:'2-digit', year:'numeric'});
 const shortMD = d => d.toLocaleDateString(undefined,{month:'short', day:'2-digit'});
@@ -60,8 +102,7 @@ function* dateRange(start, end){
     yield d;
   }
 }
-function isWeekday(d){ return d.getDay() >= 1 && d.getDay() <= 5; }
-
+function isWeekday(d){ return d.getDay() >= 1 && d.getDay() <= 5; } // Mon–Fri
 function buildNonAttendanceMap(){
   const m = new Map();
   for(const [label, sy, sm, sd, ey, em, ed] of NON_ATTENDANCE){
@@ -70,7 +111,6 @@ function buildNonAttendanceMap(){
   }
   return m;
 }
-
 function allSchoolDays(){
   const na = buildNonAttendanceMap();
   const days = [];
@@ -79,12 +119,10 @@ function allSchoolDays(){
   }
   return days;
 }
-
 function remainingSchoolDays(today = new Date()){
   today.setHours(0,0,0,0);
   return allSchoolDays().filter(d => d.getTime() >= today.getTime()).length;
 }
-
 function todayStatus(today = new Date()){
   today.setHours(0,0,0,0);
   const na = buildNonAttendanceMap();
@@ -96,10 +134,69 @@ function todayStatus(today = new Date()){
   return ["School day", null];
 }
 
-function nextBreak(today = new Date()){
-  today.setHours(0,0,0,0);
+/* ===== Period helpers ===== */
+function scheduleForDate(baseDate){
+  const y = baseDate.getFullYear(), m = baseDate.getMonth(), d = baseDate.getDate();
+  const useOnly = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
+  return SCHEDULE.map(p => ({
+    ...p,
+    startDate: new Date(y, m, d, p.start[0], p.start[1]),
+    endDate:   new Date(y, m, d, p.end[0],   p.end[1]),
+    _count: useOnly ? useOnly.has(p.id) : !!p.include
+  }));
+}
+function countedPeriodsPerDay(){
+  const useOnly = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
+  return SCHEDULE.filter(p => (useOnly ? useOnly.has(p.id) : !!p.include)).length;
+}
+function remainingPeriodsToday(now = new Date()){
+  const sched = scheduleForDate(now);
+  return sched.filter(p => p._count && p.endDate.getTime() > now.getTime()).length;
+}
+function nextUpcomingPeriod(now = new Date()){
+  const sched = scheduleForDate(now);
+  const upcoming = sched.find(p => p._count && p.endDate.getTime() > now.getTime());
+  return upcoming || null;
+}
+function totalRemainingPeriods(now = new Date()){
+  now.setSeconds(0,0);
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const days = allSchoolDays();
+  const perDay = countedPeriodsPerDay();
+  const futureDays = days.filter(d => d.getTime() > today.getTime()).length;
+  let total = futureDays * perDay;
+  const [status] = todayStatus(today);
+  if(status === "School day"){
+    total += remainingPeriodsToday(now);
+  } else if(status === "Not started"){
+    total = days.length * perDay;
+  }
+  return total;
+}
+
+/* ===== UI ===== */
+function render(){
+  const now = new Date();
+  now.setSeconds(0,0);
+  const today = new Date(now); today.setHours(0,0,0,0);
+
+  const daysEl = document.getElementById('daysCount');
+  const perEl  = document.getElementById('periodsCount');
+  const todayEl= document.getElementById('today');
+  const nextEl = document.getElementById('next');
+  const todayPerEl = document.getElementById('todayPeriods');
+  const rangeEl = document.getElementById('range');
+
+  daysEl.textContent = `${remainingSchoolDays(today)} school days left`;
+  perEl.textContent  = `${totalRemainingPeriods(now)} periods left`;
+
+  const [status] = todayStatus(today);
+  todayEl.textContent = `Today: ${status}  (${iso(today)})`;
+
+  // Next break
   const na = buildNonAttendanceMap();
   const start = new Date(Math.max(today, FIRST_DAY));
+  let msg = "Next break: None — approaching the end of the year";
   for(const d of dateRange(start, LAST_DAY)){
     const key = +d;
     if(na.has(key)){
@@ -108,54 +205,40 @@ function nextBreak(today = new Date()){
       for(const f of dateRange(new Date(+d+oneDay), LAST_DAY)){
         if(na.get(+f) === label){ end = f; } else { break; }
       }
-      return [d, end, label];
+      msg = (d.getTime()===end.getTime())
+        ? `Next break: ${label} on ${iso(d).replace(/, \d{4}$/, '')}`
+        : `Next break: ${label} (${shortMD(d)}–${shortMD(end)})`;
+      break;
     }
   }
-  return null;
-}
+  nextEl.textContent = msg;
 
-function render(){
-  const today = new Date(); today.setHours(0,0,0,0);
-  const countEl = document.getElementById('count');
-  const todayEl = document.getElementById('today');
-  const nextEl  = document.getElementById('next');
-  const rangeEl = document.getElementById('range');
+  // Today's periods
+  const perDay = countedPeriodsPerDay();
+  const remainingToday = (status === "School day") ? remainingPeriodsToday(now) : 0;
+  const np = nextUpcomingPeriod(now);
+  const nextTxt = np ? `Next: ${np.label} ${np.startDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}–${np.endDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`
+                     : "No more periods today";
+  todayPerEl.innerHTML = `Remaining today: <strong>${remainingToday}</strong> of ${perDay} <span class="pill">${nextTxt}</span>`;
 
-  countEl.textContent = `${remainingSchoolDays(today)} school days left`;
-
-  const [status] = todayStatus(today);
-  todayEl.textContent = `Today: ${status}  (${iso(today)})`;
-
-  const nb = nextBreak(today);
-  if(nb){
-    const [s,e,label] = nb;
-    nextEl.textContent = (s.getTime()===e.getTime())
-      ? `Next break: ${label} on ${iso(s).replace(/, \d{4}$/,'')}`
-      : `Next break: ${label} (${shortMD(s)}–${shortMD(e)})`;
-  } else {
-    nextEl.textContent = "Next break: None — approaching the end of the year";
-  }
   rangeEl.textContent = `School year: ${iso(FIRST_DAY).replace(/, \d{4}$/,'')} — ${iso(LAST_DAY).replace(/^[A-Za-z]+, /,'')}`;
 }
 
 document.getElementById('refreshBtn').addEventListener('click', render);
 document.getElementById('copyBtn').addEventListener('click', () => {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const rem = remainingSchoolDays(today);
+  const now = new Date();
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const remDays = remainingSchoolDays(today);
+  const remPer  = totalRemainingPeriods(now);
   const [status] = todayStatus(today);
-  const nb = nextBreak(today);
+  const perDay = countedPeriodsPerDay();
+  const remToday = (status === "School day") ? remainingPeriodsToday(now) : 0;
   let lines = [
-    `${rem} school days left`,
+    `${remDays} school days left`,
+    `${remPer} periods left (${remToday} of ${perDay} remaining today)`,
     `Today: ${status} (${iso(today)})`,
     `School year: ${iso(FIRST_DAY)} to ${iso(LAST_DAY)}`
   ];
-  if(nb){
-    const [s,e,label] = nb;
-    lines.splice(2,0,(s.getTime()===e.getTime())
-      ? `Next break: ${label} on ${iso(s)}`
-      : `Next break: ${label} from ${iso(s)} to ${iso(e)}`
-    );
-  }
   navigator.clipboard?.writeText(lines.join("\n"));
 });
 

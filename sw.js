@@ -1,5 +1,5 @@
-// Simple offline cache
-const CACHE = 'sdc-v1';
+// Offline cache
+const CACHE = 'sdc-v2';
 const ASSETS = ['./','index.html','manifest.webmanifest','sw.js'];
 
 self.addEventListener('install', e => {
