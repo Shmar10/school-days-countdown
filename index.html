@@ -58,7 +58,7 @@
         <div class="row sub" id="next"></div>
       </div>
 
-      <div class="row sub" id="todaySummary"></div>
+      <!-- Removed the "Remaining today / Next:" summary line -->
       <div class="chips" id="chips"></div>
 
       <div class="btns">
@@ -103,7 +103,6 @@ const SCHEDULE = [
   { id:"08", label:"Period 08", start:[13,54], end:[14,36], include:true },
   { id:"09", label:"Period 09", start:[14,41], end:[15,23], include:true },
 ];
-
 const INCLUDE_ONLY = null;
 
 /* ===== Helpers ===== */
@@ -137,11 +136,6 @@ function allSchoolDays(){
   }
   return days;
 }
-function remainingSchoolDays(today = new Date()){
-  // includes today if it's a school day
-  today.setHours(0,0,0,0);
-  return allSchoolDays().filter(d => d.getTime() >= today.getTime()).length;
-}
 function fullDaysAfterToday(today = new Date()){
   // strictly after today
   today.setHours(0,0,0,0);
@@ -163,10 +157,6 @@ function scheduleForDate(baseDate){
   const y = baseDate.getFullYear(), m = baseDate.getMonth(), d = baseDate.getDate();
   const useOnly = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
   return SCHEDULE.map(p => ({ ...p, startDate: new Date(y,m,d,p.start[0],p.start[1]), endDate: new Date(y,m,d,p.end[0],p.end[1]), _count: useOnly ? useOnly.has(p.id) : !!p.include }));
-}
-function countedPeriodsPerDay(){
-  const useOnly = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
-  return SCHEDULE.filter(p => (useOnly ? useOnly.has(p.id) : !!p.include)).length;
 }
 function remainingPeriodsToday(now = new Date()){
   const sched = scheduleForDate(now);
@@ -228,17 +218,10 @@ function render(){
   }
   document.getElementById('next').textContent = msg;
 
-  // Today's summary
-  const perDay = countedPeriodsPerDay();
-  const remToday = periodsToday;
-  const np = nextUpcomingPeriod(now);
-  const nextTxt = np ? `Next: ${np.label} ${np.startDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}–${np.endDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`
-                     : "No more periods today";
-  document.getElementById('todaySummary').textContent = `Remaining today: ${remToday} of ${perDay} — ${nextTxt}`;
+  // Build chips only; no "Remaining today" or "Next:" summary line
+  buildChips(now);
 
   document.getElementById('range').textContent = `School year: ${iso(FIRST_DAY).replace(/, \d{4}$/,'')} — ${iso(LAST_DAY).replace(/^[A-Za-z]+, /,'')}`;
-
-  buildChips(now);
 }
 
 document.getElementById('refreshBtn').addEventListener('click', render);
@@ -250,9 +233,8 @@ document.getElementById('copyBtn').addEventListener('click', () => {
   const lines = [];
   lines.push(`${daysExclToday} days and ${periodsToday} periods left`);
   const [status] = todayStatus(today);
-  const perDay = countedPeriodsPerDay();
   lines.push(`Today: ${status} (${iso(today)})`);
-  lines.push(`Remaining today: ${periodsToday} of ${perDay}`);
+  lines.push(document.getElementById('next').textContent);
   lines.push(document.getElementById('range').textContent);
   navigator.clipboard?.writeText(lines.join("\n"));
 });
