@@ -1,6 +1,6 @@
-// Offline cache
-const CACHE = 'sdc-v2';
-const ASSETS = ['./','index.html','manifest.webmanifest','sw.js'];
+// Offline cache with version bump
+const CACHE = 'sdc-v3';
+const ASSETS = ['./','index.html','manifest.webmanifest','sw.js','icons/icon-192.png','icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));

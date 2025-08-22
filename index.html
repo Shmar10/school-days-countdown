@@ -4,42 +4,78 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>School Days & Periods Countdown</title>
-  <meta name="theme-color" content="#f6f6f6">
+  <meta name="theme-color" content="#0ea5e9">
   <link rel="manifest" href="manifest.webmanifest">
   <style>
-    :root { --fg:#111; --muted:#4a4a4a; --bg:#f6f6f6; }
-    html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial;}
-    .wrap{max-width:920px;margin:0 auto;padding:24px}
-    h1{font-size:clamp(36px,10vw,104px);margin:6px 0 2px;font-weight:800;line-height:0.9}
-    h2{font-size:clamp(26px,6.5vw,72px);margin:2px 0 10px;font-weight:800;line-height:0.95}
+    :root {
+      --bg1:#0ea5e9; --bg2:#22c55e; --fg:#0b1220; --muted:#576172; --card:#ffffffaa; --border:#ffffff55;
+      --chip:#ffffffb8; --chipText:#0b1220; --chipPast:#e2e8f0; --chipNow:#fde68a;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial}
+    /* animated gradient background */
+    body{
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      background-size: 200% 200%;
+      animation: hue 14s ease infinite;
+      color:var(--fg);
+    }
+    @keyframes hue{
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+    /* glass card */
+    .wrap{max-width:1000px;margin:0 auto;padding:28px}
+    .card{
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border:1px solid var(--border);
+      border-radius:22px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+      padding:26px;
+    }
+    h1{
+      font-size:clamp(34px,6.8vw,84px);
+      line-height:1.02;
+      margin:0 0 8px;
+      font-weight:900;
+      letter-spacing:-0.02em;
+    }
+    .sub{font-size:clamp(16px,2.8vw,22px); color:#0b1220; opacity:.95}
     .muted{color:var(--muted)}
-    .row{margin:10px 0 14px;font-size:clamp(16px,2.8vw,22px)}
-    .small{font-size:14px;margin-top:18px}
-    .btns{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
-    button{font-size:16px;padding:8px 14px;border-radius:10px;border:1px solid #ddd;background:#fff;cursor:pointer}
+    .grid{display:grid;grid-template-columns:1fr 1fr; gap:14px; margin-top:10px}
+    @media (max-width:800px){ .grid{grid-template-columns:1fr;} }
+    .row{padding:10px 0}
+    .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+    .chip{background:var(--chip); color:var(--chipText); border-radius:999px; padding:8px 12px; border:1px solid var(--border); font-size:14px}
+    .chip.past{background:var(--chipPast)}
+    .chip.now{background:var(--chipNow); font-weight:700}
+    .small{font-size:14px;margin-top:14px;color:#0b1220}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{font-size:16px;padding:8px 14px;border-radius:12px;border:1px solid var(--border);background:#fff;cursor:pointer}
     button:active{transform:translateY(1px)}
-    .grid{display:grid;grid-template-columns: 1fr 1fr;gap:12px}
-    @media (max-width:720px){ .grid{grid-template-columns:1fr;}}
-    .pill{display:inline-block;padding:4px 10px;border:1px solid #ddd;border-radius:999px;font-size:14px;margin-left:8px}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1 id="daysCount"></h1>
-    <h2 id="periodsCount"></h2>
+    <div class="card">
+      <h1 id="topline">Loading…</h1>
+      <div class="grid">
+        <div class="row sub" id="today"></div>
+        <div class="row sub" id="next"></div>
+      </div>
 
-    <div class="grid">
-      <div class="row" id="today"></div>
-      <div class="row" id="next"></div>
+      <div class="row sub" id="todaySummary"></div>
+      <div class="chips" id="chips"></div>
+
+      <div class="btns">
+        <button id="refreshBtn">Refresh now</button>
+        <button id="copyBtn">Copy details</button>
+      </div>
+      <div class="small" id="range"></div>
     </div>
-
-    <div class="row" id="todayPeriods"></div>
-
-    <div class="btns">
-      <button id="refreshBtn">Refresh now</button>
-      <button id="copyBtn">Copy details</button>
-    </div>
-    <div class="small muted" id="range"></div>
   </div>
 
 <script>
@@ -65,11 +101,7 @@ const NON_ATTENDANCE = [
 
 /* =====================
    BELL SCHEDULE
-   =====================
-   Use 24-hour clock: [hour, minute].
-   Set include:true for periods to count. (Default here excludes Homeroom.)
-   You can also limit to your own sections by listing only those IDs.
-*/
+   ===================== */
 const SCHEDULE = [
   { id:"01", label:"Period 01", start:[8,10],  end:[8,52],  include:true },
   { id:"02", label:"Period 02", start:[8,57],  end:[9,39],  include:true },
@@ -83,9 +115,8 @@ const SCHEDULE = [
   { id:"09", label:"Period 09", start:[14,41], end:[15,23], include:true },
 ];
 
-/* If you only want to count certain periods (e.g., the ones you teach),
-   put their IDs here and those will be used instead of 'include:true'. */
-// const INCLUDE_ONLY = ["01","03","05","07"]; // <-- example; comment out to count all included periods
+// If you only want to count certain periods (your teaching sections), list their IDs.
+// e.g., const INCLUDE_ONLY = ["01","03","05"];  Set to null to count all with include:true.
 const INCLUDE_ONLY = null;
 
 /* ===== Helpers ===== */
@@ -175,70 +206,78 @@ function totalRemainingPeriods(now = new Date()){
 }
 
 /* ===== UI ===== */
+function buildChips(now = new Date()){
+  const chips = document.getElementById('chips');
+  chips.innerHTML = "";
+  const sched = scheduleForDate(now);
+  for(const p of sched){
+    if(!p._count) continue;
+    let cls = "chip";
+    if(p.endDate.getTime() <= now.getTime()) cls += " past";
+    else if(p.startDate.getTime() <= now.getTime()) cls += " now";
+    const txt = `${p.label} ${p.startDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}–${p.endDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`;
+    const el = document.createElement('span');
+    el.className = cls; el.textContent = txt;
+    chips.appendChild(el);
+  }
+}
+
 function render(){
-  const now = new Date();
-  now.setSeconds(0,0);
+  const now = new Date(); now.setSeconds(0,0);
   const today = new Date(now); today.setHours(0,0,0,0);
 
-  const daysEl = document.getElementById('daysCount');
-  const perEl  = document.getElementById('periodsCount');
-  const todayEl= document.getElementById('today');
-  const nextEl = document.getElementById('next');
-  const todayPerEl = document.getElementById('todayPeriods');
-  const rangeEl = document.getElementById('range');
-
-  daysEl.textContent = `${remainingSchoolDays(today)} school days left`;
-  perEl.textContent  = `${totalRemainingPeriods(now)} periods left`;
+  const days = remainingSchoolDays(today);
+  const periods = totalRemainingPeriods(now);
+  document.getElementById('topline').textContent = `${days} school days and ${periods} periods left`;
 
   const [status] = todayStatus(today);
-  todayEl.textContent = `Today: ${status}  (${iso(today)})`;
+  document.getElementById('today').textContent = `Today: ${status}  (${iso(today)})`;
 
   // Next break
   const na = buildNonAttendanceMap();
   const start = new Date(Math.max(today, FIRST_DAY));
   let msg = "Next break: None — approaching the end of the year";
   for(const d of dateRange(start, LAST_DAY)){
-    const key = +d;
-    if(na.has(key)){
-      const label = na.get(key);
+    if(na.has(+d)){
+      const label = na.get(+d);
       let end = new Date(d);
       for(const f of dateRange(new Date(+d+oneDay), LAST_DAY)){
         if(na.get(+f) === label){ end = f; } else { break; }
       }
       msg = (d.getTime()===end.getTime())
-        ? `Next break: ${label} on ${iso(d).replace(/, \d{4}$/, '')}`
+        ? `Next break: ${label} on ${iso(d).replace(/, \d{4}$/,'')}`
         : `Next break: ${label} (${shortMD(d)}–${shortMD(end)})`;
       break;
     }
   }
-  nextEl.textContent = msg;
+  document.getElementById('next').textContent = msg;
 
-  // Today's periods
+  // Today's summary
   const perDay = countedPeriodsPerDay();
-  const remainingToday = (status === "School day") ? remainingPeriodsToday(now) : 0;
+  const remToday = (status === "School day") ? remainingPeriodsToday(now) : 0;
   const np = nextUpcomingPeriod(now);
   const nextTxt = np ? `Next: ${np.label} ${np.startDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}–${np.endDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`
                      : "No more periods today";
-  todayPerEl.innerHTML = `Remaining today: <strong>${remainingToday}</strong> of ${perDay} <span class="pill">${nextTxt}</span>`;
+  document.getElementById('todaySummary').textContent = `Remaining today: ${remToday} of ${perDay} — ${nextTxt}`;
 
-  rangeEl.textContent = `School year: ${iso(FIRST_DAY).replace(/, \d{4}$/,'')} — ${iso(LAST_DAY).replace(/^[A-Za-z]+, /,'')}`;
+  document.getElementById('range').textContent = `School year: ${iso(FIRST_DAY).replace(/, \d{4}$/,'')} — ${iso(LAST_DAY).replace(/^[A-Za-z]+, /,'')}`;
+
+  buildChips(now);
 }
 
 document.getElementById('refreshBtn').addEventListener('click', render);
 document.getElementById('copyBtn').addEventListener('click', () => {
-  const now = new Date();
+  const now = new Date(); now.setSeconds(0,0);
   const today = new Date(now); today.setHours(0,0,0,0);
-  const remDays = remainingSchoolDays(today);
-  const remPer  = totalRemainingPeriods(now);
+  const lines = [];
+  lines.push(document.getElementById('topline').textContent);
   const [status] = todayStatus(today);
   const perDay = countedPeriodsPerDay();
   const remToday = (status === "School day") ? remainingPeriodsToday(now) : 0;
-  let lines = [
-    `${remDays} school days left`,
-    `${remPer} periods left (${remToday} of ${perDay} remaining today)`,
-    `Today: ${status} (${iso(today)})`,
-    `School year: ${iso(FIRST_DAY)} to ${iso(LAST_DAY)}`
-  ];
+  lines.push(`Today: ${status} (${iso(today)})`);
+  lines.push(`Remaining today: ${remToday} of ${perDay}`);
+  lines.push(document.getElementById('next').textContent);
+  lines.push(document.getElementById('range').textContent);
   navigator.clipboard?.writeText(lines.join("\n"));
 });
 
