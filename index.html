@@ -226,7 +226,7 @@ function render(){
   const daysExclToday = fullDaysAfterToday(today);
   const periodsToday  = (todayStatus(today)[0] === "School day") ? remainingPeriodsToday(now) : 0;
   document.getElementById('topline').textContent =
-    `${plural(daysExclToday,'day','days')} and ${plural(periodsToday,'period','periods')} left`;
+    `${plural(daysExclToday,'day','school days')} and ${plural(periodsToday,'period','periods')} left`;
 
   const [status] = todayStatus(today);
   document.getElementById('today').textContent = `Today: ${status}  (${iso(today)})`;
