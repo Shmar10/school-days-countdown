@@ -8,9 +8,9 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <style>
-    :root {
+    :root{
       --bg1:#6b21a8; --bg2:#9333ea; --fg:#0b1220; --muted:#434c5e; --card:#ffffffd6; --border:#ffffff66;
-      --chip:#ffffffb8; --chipText:#0b1220; --chipPast:#eceaf5; --chipNow:#fde68a;
+      --chip:#ffffffb8; --chipText:#0b1220; --chipPast:#eceaf5; --chipNow:#fde68a; --label:#ffffffbb;
     }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial}
@@ -20,7 +20,7 @@
       animation: hue 16s ease-in-out infinite;
       color:var(--fg);
     }
-    @keyframes hue{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    @keyframes hue{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
     .wrap{max-width:980px;margin:0 auto;padding:18px}
     .brand{color:#fff;letter-spacing:.08em;font-weight:800;text-transform:uppercase;margin:0 0 8px;opacity:.9;font-size:14px}
     .card{
@@ -34,7 +34,6 @@
     }
     h1{font-size:clamp(26px,6.2vw,56px); line-height:1.07;margin:0 0 6px;font-weight:900;letter-spacing:-0.02em;}
     .sub{font-size:clamp(14px,2.6vw,18px); color:#0b1220; opacity:.95; line-height:1.25}
-    .muted{color:var(--muted)}
     .grid{display:grid;grid-template-columns:1fr 1fr; gap:10px; margin-top:6px}
     @media (max-width:780px){ .grid{grid-template-columns:1fr;} }
     .row{padding:6px 0}
@@ -46,6 +45,7 @@
     .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
     button{font-size:14px;padding:6px 10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer}
     button:active{transform:translateY(1px)}
+    .mode-pill{display:inline-block;background:var(--label); border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-size:12px; margin-left:6px}
   </style>
 </head>
 <body>
@@ -53,12 +53,16 @@
     <h3 class="brand">NN Vikings</h3>
     <div class="card">
       <h1 id="topline">Loading…</h1>
+
       <div class="grid">
         <div class="row sub" id="today"></div>
         <div class="row sub" id="next"></div>
       </div>
 
-      <!-- Removed the "Remaining today / Next:" summary line -->
+      <!-- Shows "Wednesday schedule" or "Special schedule" when applicable -->
+      <div class="row sub" id="modeRow"></div>
+
+      <!-- Period chips (past/now/upcoming) -->
       <div class="chips" id="chips"></div>
 
       <div class="btns">
@@ -89,9 +93,10 @@ const NON_ATTENDANCE = [
 ];
 
 /* =====================
-   BELL SCHEDULE
+   BELL SCHEDULES
    ===================== */
-const SCHEDULE = [
+/* Default (Mon, Tue, Thu, Fri) */
+const SCHEDULE_DEFAULT = [
   { id:"01", label:"Period 01", start:[8,10],  end:[8,52],  include:true },
   { id:"02", label:"Period 02", start:[8,57],  end:[9,39],  include:true },
   { id:"03", label:"Period 03", start:[9,44],  end:[10,26], include:true },
@@ -103,13 +108,33 @@ const SCHEDULE = [
   { id:"08", label:"Period 08", start:[13,54], end:[14,36], include:true },
   { id:"09", label:"Period 09", start:[14,41], end:[15,23], include:true },
 ];
+/* Wednesday schedule */
+const SCHEDULE_WED = [
+  { id:"01", label:"Period 01", start:[9,40],  end:[10,14], include:true },
+  { id:"02", label:"Period 02", start:[10,19], end:[10,52], include:true },
+  { id:"03", label:"Period 03", start:[10,57], end:[11,31], include:true },
+  { id:"04", label:"Period 04", start:[11,36], end:[12,10], include:true },
+  { id:"05", label:"Period 05", start:[12,15], end:[12,49], include:true },
+  { id:"06", label:"Period 06", start:[12,54], end:[13,28], include:true },
+  { id:"07", label:"Period 07", start:[13,33], end:[14,7],  include:true },
+  { id:"08", label:"Period 08", start:[14,12], end:[14,45], include:true },
+  { id:"09", label:"Period 09", start:[14,50], end:[15,23], include:true },
+];
+
+// If you only want to count certain sections, list period IDs here; otherwise all include:true are counted
 const INCLUDE_ONLY = null;
 
-/* ===== Helpers ===== */
-const oneDay = 24*60*60*1000;
-const iso = d => d.toLocaleDateString(undefined,{weekday:'long', month:'short', day:'2-digit', year:'numeric'});
-const shortMD = d => d.toLocaleDateString(undefined,{month:'short', day:'2-digit'});
+/* Optional date-specific overrides (e.g., assemblies)
+   Example: { '2025-11-05': SCHEDULE_WED }
+*/
+const SPECIAL_DATES = {};
 
+const oneDay = 24*60*60*1000;
+const iso     = d => d.toLocaleDateString(undefined,{weekday:'long', month:'short', day:'2-digit', year:'numeric'});
+const shortMD = d => d.toLocaleDateString(undefined,{month:'short', day:'2-digit'});
+const toKey   = d => d.toISOString().slice(0,10);
+
+/* ===== Helpers ===== */
 function* dateRange(start, end){
   const s = new Date(start); s.setHours(0,0,0,0);
   const e = new Date(end);   e.setHours(0,0,0,0);
@@ -137,7 +162,6 @@ function allSchoolDays(){
   return days;
 }
 function fullDaysAfterToday(today = new Date()){
-  // strictly after today
   today.setHours(0,0,0,0);
   return allSchoolDays().filter(d => d.getTime() > today.getTime()).length;
 }
@@ -155,17 +179,19 @@ function todayStatus(today = new Date()){
 /* ===== Period helpers ===== */
 function scheduleForDate(baseDate){
   const y = baseDate.getFullYear(), m = baseDate.getMonth(), d = baseDate.getDate();
+  const key = toKey(baseDate);
+  let base = SPECIAL_DATES[key] || (baseDate.getDay() === 3 ? SCHEDULE_WED : SCHEDULE_DEFAULT);
   const useOnly = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
-  return SCHEDULE.map(p => ({ ...p, startDate: new Date(y,m,d,p.start[0],p.start[1]), endDate: new Date(y,m,d,p.end[0],p.end[1]), _count: useOnly ? useOnly.has(p.id) : !!p.include }));
+  return base.map(p => ({
+    ...p,
+    startDate: new Date(y, m, d, p.start[0], p.start[1]),
+    endDate:   new Date(y, m, d, p.end[0],   p.end[1]),
+    _count: useOnly ? useOnly.has(p.id) : !!p.include
+  }));
 }
 function remainingPeriodsToday(now = new Date()){
   const sched = scheduleForDate(now);
   return sched.filter(p => p._count && p.endDate.getTime() > now.getTime()).length;
-}
-function nextUpcomingPeriod(now = new Date()){
-  const sched = scheduleForDate(now);
-  const upcoming = sched.find(p => p._count && p.endDate.getTime() > now.getTime());
-  return upcoming || null;
 }
 
 /* ===== UI ===== */
@@ -185,6 +211,11 @@ function buildChips(now = new Date()){
     el.className = cls; el.textContent = txt;
     chips.appendChild(el);
   }
+  // Mode label (Wednesday / Special)
+  const mode = (toKey(now) in SPECIAL_DATES) ? "Special schedule"
+             : (now.getDay()===3 ? "Wednesday schedule" : "");
+  const row = document.getElementById('modeRow');
+  row.innerHTML = mode ? `<span class="mode-pill">${mode}</span>` : "";
 }
 
 function render(){
@@ -194,7 +225,8 @@ function render(){
   // Top line: days EXCLUDING today + periods left TODAY
   const daysExclToday = fullDaysAfterToday(today);
   const periodsToday  = (todayStatus(today)[0] === "School day") ? remainingPeriodsToday(now) : 0;
-  document.getElementById('topline').textContent = `${plural(daysExclToday,'day','days')} and ${plural(periodsToday,'period','periods')} left`;
+  document.getElementById('topline').textContent =
+    `${plural(daysExclToday,'day','days')} and ${plural(periodsToday,'period','periods')} left`;
 
   const [status] = todayStatus(today);
   document.getElementById('today').textContent = `Today: ${status}  (${iso(today)})`;
@@ -218,10 +250,9 @@ function render(){
   }
   document.getElementById('next').textContent = msg;
 
-  // Build chips only; no "Remaining today" or "Next:" summary line
   buildChips(now);
-
-  document.getElementById('range').textContent = `School year: ${iso(FIRST_DAY).replace(/, \d{4}$/,'')} — ${iso(LAST_DAY).replace(/^[A-Za-z]+, /,'')}`;
+  document.getElementById('range').textContent =
+    `School year: ${iso(FIRST_DAY).replace(/, \d{4}$/,'')} — ${iso(LAST_DAY).replace(/^[A-Za-z]+, /,'')}`;
 }
 
 document.getElementById('refreshBtn').addEventListener('click', render);
