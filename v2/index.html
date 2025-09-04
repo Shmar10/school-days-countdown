@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NN Vikings v2 — School Days & Periods</title>
+  <meta name="theme-color" content="#6b21a8">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <style>
+    :root{
+      --bg1:#6b21a8; --bg2:#9333ea; --fg:#0b1220; --muted:#434c5e; --card:#ffffffd6; --border:#ffffff66;
+      --chip:#ffffffb8; --chipText:#0b1220; --chipPast:#eceaf5; --chipNow:#fde68a; --label:#ffffffbb;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial}
+    body{
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      background-size:200% 200%;
+      animation:hue 16s ease-in-out infinite;
+      color:var(--fg);
+    }
+    @keyframes hue{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    .wrap{max-width:980px;margin:0 auto;padding:18px}
+    .brand{color:#fff;letter-spacing:.08em;font-weight:800;text-transform:uppercase;margin:0 0 8px;opacity:.9;font-size:14px}
+    .card{
+      background:var(--card); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+      border:1px solid var(--border); border-radius:18px; box-shadow:0 14px 40px rgba(0,0,0,.18);
+      padding:16px 16px 14px;
+    }
+    h1{font-size:clamp(26px,6.2vw,56px);line-height:1.07;margin:0 0 6px;font-weight:900;letter-spacing:-.02em}
+    .sub{font-size:clamp(14px,2.6vw,18px);color:#0b1220;opacity:.95;line-height:1.25}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+    @media (max-width:780px){.grid{grid-template-columns:1fr}}
+    .row{padding:6px 0}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    .chip{background:var(--chip);color:var(--chipText);border-radius:999px;padding:6px 10px;border:1px solid var(--border);font-size:12px;line-height:1}
+    .chip.past{background:var(--chipPast)}
+    .chip.now{background:var(--chipNow);font-weight:700}
+    .small{font-size:12px;margin-top:10px;color:#0b1220}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    button{font-size:14px;padding:6px 10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer}
+    button:active{transform:translateY(1px)}
+    .mode-pill{display:inline-block;background:var(--label);border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:12px;margin-left:6px}
+
+    /* Settings modal */
+    .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;padding:16px}
+    .modal{max-width:720px;width:100%;background:#fff;border-radius:16px;padding:16px;border:1px solid #e5e7eb}
+    .modal h3{margin:0 0 8px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:680px){.row2{grid-template-columns:1fr}}
+    label{font-size:12px;color:#374151}
+    input,select,textarea{width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px}
+    textarea{min-height:120px}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #e5e7eb;border-radius:999px;padding:4px 10px;font-size:12px;margin:4px 6px 0 0}
+    .pill button{font-size:12px;padding:2px 8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h3 class="brand">NN Vikings</h3>
+    <div class="card">
+      <h1 id="topline">Loading…</h1>
+
+      <div class="grid">
+        <div class="row sub" id="today"></div>
+        <div class="row sub" id="next"></div>
+      </div>
+
+      <div class="row sub" id="modeRow"></div>
+      <div class="chips" id="chips"></div>
+
+      <div class="btns">
+        <button id="refreshBtn">Refresh now</button>
+        <button id="copyBtn">Copy details</button>
+        <button id="settingsBtn">⚙️ Settings</button>
+      </div>
+      <div class="small" id="range"></div>
+    </div>
+  </div>
+
+  <!-- Settings modal -->
+  <div class="backdrop" id="backdrop">
+    <div class="modal">
+      <h3>Special day overrides</h3>
+      <p class="small" style="margin-top:0">
+        Add one-off dates with a different schedule (e.g., early release, assemblies).
+        Stored locally in your browser and take priority over everything else.
+      </p>
+      <div class="row2">
+        <div>
+          <label for="ovDate">Date</label>
+          <input id="ovDate" type="date">
+        </div>
+        <div>
+          <label for="ovKind">Schedule</label>
+          <select id="ovKind">
+            <option value="DEFAULT">Default (regular)</option>
+            <option value="WED_LATE">Late Start (9:40)</option>
+            <option value="LATE_ARRIVAL_1010">Late Arrival (10:10)</option>
+            <option value="CUSTOM">Custom (paste JSON below)</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <label for="ovCustom">Custom schedule JSON (array of periods). Example:<br>
+          <code>[{"{"}"id":"01","label":"P1","start":[9,0],"end":[9,40],"include":true{"}"}]</code>
+        </label>
+        <textarea id="ovCustom" placeholder='[{"id":"01","label":"P1","start":[9,0],"end":[9,40],"include":true}]'></textarea>
+      </div>
+      <div class="btns" style="margin-top:10px">
+        <button id="ovAdd">Add / Update</button>
+        <button id="ovClear">Clear all overrides</button>
+        <button id="closeModal">Close</button>
+      </div>
+      <div id="ovList" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+<script>
+/* =====================
+   FILES TO LOAD
+   ===================== */
+const FILE_NON_ATTENDANCE = 'non_attendance.json';
+const FILE_LATE_WEDS      = 'late_start_wednesdays.json';
+const FILE_LATE_1010      = 'late_arrival_1010.json';
+
+/* =====================
+   SCHOOL YEAR
+   ===================== */
+const FIRST_DAY = new Date(2025, 7, 12); // Aug 12, 2025
+const LAST_DAY  = new Date(2026, 4, 21); // May 21, 2026
+
+/* =====================
+   SCHEDULES (named)
+   ===================== */
+const SCHEDULES = {
+  DEFAULT: [
+    { id:"01", label:"Period 01", start:[8,10],  end:[8,52],  include:true },
+    { id:"02", label:"Period 02", start:[8,57],  end:[9,39],  include:true },
+    { id:"03", label:"Period 03", start:[9,44],  end:[10,26], include:true },
+    { id:"HR", label:"Homeroom",  start:[10,31], end:[10,41], include:false },
+    { id:"04", label:"Period 04", start:[10,46], end:[11,28], include:true },
+    { id:"05", label:"Period 05", start:[11,33], end:[12,15], include:true },
+    { id:"06", label:"Period 06", start:[12,20], end:[13,2],  include:true },
+    { id:"07", label:"Period 07", start:[13,7],  end:[13,49], include:true },
+    { id:"08", label:"Period 08", start:[13,54], end:[14,36], include:true },
+    { id:"09", label:"Period 09", start:[14,41], end:[15,23], include:true }
+  ],
+  WED_LATE: [
+    { id:"01", label:"Period 01", start:[9,40],  end:[10,14], include:true },
+    { id:"02", label:"Period 02", start:[10,19], end:[10,52], include:true },
+    { id:"03", label:"Period 03", start:[10,57], end:[11,31], include:true },
+    { id:"04", label:"Period 04", start:[11,36], end:[12,10], include:true },
+    { id:"05", label:"Period 05", start:[12,15], end:[12,49], include:true },
+    { id:"06", label:"Period 06", start:[12,54], end:[13,28], include:true },
+    { id:"07", label:"Period 07", start:[13,33], end:[14,7],  include:true },
+    { id:"08", label:"Period 08", start:[14,12], end:[14,45], include:true },
+    { id:"09", label:"Period 09", start:[14,50], end:[15,23], include:true }
+  ],
+  LATE_ARRIVAL_1010: [
+    { id:"01", label:"Period 01", start:[10,10], end:[10,41], include:true },
+    { id:"02", label:"Period 02", start:[10,46], end:[11,16], include:true },
+    { id:"03", label:"Period 03", start:[11,21], end:[11,51], include:true },
+    { id:"04", label:"Period 04", start:[11,56], end:[12,26], include:true },
+    { id:"05", label:"Period 05", start:[12,31], end:[13,2],  include:true },
+    { id:"06", label:"Period 06", start:[13,7],  end:[13,37], include:true },
+    { id:"07", label:"Period 07", start:[13,42], end:[14,12], include:true },
+    { id:"08", label:"Period 08", start:[14,17], end:[14,47], include:true },
+    { id:"09", label:"Period 09", start:[14,52], end:[15,23], include:true }
+  ]
+};
+
+// Count only certain sections? Put IDs here; otherwise all include:true are counted.
+const INCLUDE_ONLY = null;
+
+/* ===== Utilities ===== */
+const oneDay = 24*60*60*1000;
+const iso     = d => d.toLocaleDateString(undefined,{weekday:'long', month:'short', day:'2-digit', year:'numeric'});
+const shortMD = d => d.toLocaleDateString(undefined,{month:'short', day:'2-digit'});
+const toKey   = d => d.toISOString().slice(0,10);
+function parseISODate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y, m-1, d); }
+
+function* dateRange(start, end){
+  const s = new Date(start); s.setHours(0,0,0,0);
+  const e = new Date(end);   e.setHours(0,0,0,0);
+  for(let t = s.getTime(); t <= e.getTime(); t += oneDay){
+    const d = new Date(t);
+    d.setHours(0,0,0,0);
+    yield d;
+  }
+}
+function isWeekday(d){ return d.getDay() >= 1 && d.getDay() <= 5; }
+function plural(n, s, p){ return `${n} ${n===1?s:p}`; }
+
+/* ===== Load JSON files (network-first) ===== */
+async function loadJSON(url){
+  try{
+    const r = await fetch(url, {cache:'no-store'});
+    if(!r.ok) throw new Error(r.status);
+    return await r.json();
+  }catch(e){
+    console.warn('Failed to load', url, e);
+    return null;
+  }
+}
+
+/* ===== Data from JSON ===== */
+let NA_MAP = new Map();           // +date -> label
+let LATE_WEDS = new Set();        // 'YYYY-MM-DD'
+let LATE_1010 = new Set();        // 'YYYY-MM-DD'
+
+function rebuildNaMap(nonAttendance){
+  NA_MAP = new Map();
+  if(!Array.isArray(nonAttendance)) return;
+  for(const item of nonAttendance){
+    const s = parseISODate(item.start);
+    const e = parseISODate(item.end);
+    for(const d of dateRange(s,e)) NA_MAP.set(+d, item.label);
+  }
+}
+function buildSet(list){ return new Set(Array.isArray(list) ? list : []); }
+
+/* ===== Overrides in localStorage ===== */
+const LS_KEY = 'sdc_special_overrides_v2';
+function loadOverrides(){
+  try{ return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }catch{ return {}; }
+}
+function saveOverrides(obj){ localStorage.setItem(LS_KEY, JSON.stringify(obj)); }
+
+/* ===== School days helpers ===== */
+function allSchoolDays(){
+  const days = [];
+  for(const d of dateRange(FIRST_DAY, LAST_DAY)){
+    if(isWeekday(d) && !NA_MAP.has(+d)) days.push(new Date(d));
+  }
+  return days;
+}
+function fullDaysAfterToday(today = new Date()){
+  today.setHours(0,0,0,0);
+  return allSchoolDays().filter(d => d.getTime() > today.getTime()).length;
+}
+function todayStatus(today = new Date()){
+  today.setHours(0,0,0,0);
+  if(today < FIRST_DAY) return ["Not started", null];
+  if(today > LAST_DAY)  return ["Completed", null];
+  if(NA_MAP.has(+today)) return [`No school: ${NA_MAP.get(+today)}`, NA_MAP.get(+today)];
+  if(!isWeekday(today))  return ["No school: Weekend", "Weekend"];
+  return ["School day", null];
+}
+
+/* ===== Schedule selection ===== */
+function scheduleForDate(baseDate){
+  const key = toKey(baseDate);
+  const overrides = loadOverrides();
+  if(overrides[key]){
+    const val = overrides[key];
+    if(val.startsWith('CUSTOM:')){
+      try{ return JSON.parse(val.slice(7)); }catch{ /* fall through */ }
+    }
+    if(SCHEDULES[val]) return SCHEDULES[val];
+  }
+  if(LATE_1010.has(key)) return SCHEDULES.LATE_ARRIVAL_1010;
+  if(LATE_WEDS.has(key)) return SCHEDULES.WED_LATE;
+  return SCHEDULES.DEFAULT;
+}
+function remainingPeriodsToday(now = new Date()){
+  const base = scheduleForDate(now);
+  const useOnly = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
+  const sched = base.map(p => ({
+    ...p,
+    startDate: new Date(now.getFullYear(),now.getMonth(),now.getDate(),p.start[0],p.start[1]),
+    endDate:   new Date(now.getFullYear(),now.getMonth(),now.getDate(),p.end[0],p.end[1]),
+    _count: useOnly ? useOnly.has(p.id) : !!p.include
+  }));
+  return sched.filter(p => p._count && p.endDate.getTime() > now.getTime()).length;
+}
+
+/* ===== UI builders ===== */
+function buildChips(now = new Date()){
+  const chips = document.getElementById('chips');
+  chips.innerHTML = "";
+  const base = scheduleForDate(now);
+  const useOnly = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
+  const sched = base.map(p => ({
+    ...p,
+    startDate: new Date(now.getFullYear(),now.getMonth(),now.getDate(),p.start[0],p.start[1]),
+    endDate:   new Date(now.getFullYear(),now.getMonth(),now.getDate(),p.end[0],p.end[1]),
+    _count: useOnly ? useOnly.has(p.id) : !!p.include
+  }));
+  for(const p of sched){
+    if(!p._count) continue;
+    let cls = "chip";
+    if(p.endDate.getTime() <= now.getTime()) cls += " past";
+    else if(p.startDate.getTime() <= now.getTime()) cls += " now";
+    const txt = `${p.label} ${p.startDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}–${p.endDate.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}`;
+    const el = document.createElement('span');
+    el.className = cls; el.textContent = txt;
+    chips.appendChild(el);
+  }
+  // Mode pill
+  const key = toKey(now);
+  let mode = '';
+  const overrides = loadOverrides();
+  if(overrides[key]) mode = overrides[key].startsWith('CUSTOM:') ? 'Special (custom)' : `Special (${overrides[key]})`;
+  else if(LATE_1010.has(key)) mode = "Late Arrival (10:10)";
+  else if(LATE_WEDS.has(key)) mode = "Late Start (9:40)";
+  document.getElementById('modeRow').innerHTML = mode ? `<span class="mode-pill">${mode}</span>` : "";
+}
+
+function render(){
+  const now = new Date(); now.setSeconds(0,0);
+  const today = new Date(now); today.setHours(0,0,0,0);
+
+  // Top line: days EXCLUDING today + periods left TODAY
+  const daysExclToday = fullDaysAfterToday(today);
+  const periodsToday  = (todayStatus(today)[0] === "School day") ? remainingPeriodsToday(now) : 0;
+  document.getElementById('topline').textContent =
+    `${plural(daysExclToday,'day','days')} and ${plural(periodsToday,'period','periods')} left`;
+
+  // Today + next break
+  const [status] = todayStatus(today);
+  document.getElementById('today').textContent = `Today: ${status}  (${iso(today)})`;
+
+  let msg = "Next break: None — approaching the end of the year";
+  const start = new Date(Math.max(today, FIRST_DAY));
+  for(const d of dateRange(start, LAST_DAY)){
+    if(NA_MAP.has(+d)){
+      const label = NA_MAP.get(+d);
+      let end = new Date(d);
+      for(const f of dateRange(new Date(+d+oneDay), LAST_DAY)){
+        if(NA_MAP.get(+f) === label){ end = f; } else { break; }
+      }
+      msg = (d.getTime()===end.getTime())
+        ? `Next break: ${label} on ${iso(d).replace(/, \d{4}$/,'')}`
+        : `Next break: ${label} (${shortMD(d)}–${shortMD(end)})`;
+      break;
+    }
+  }
+  document.getElementById('next').textContent = msg;
+
+  buildChips(now);
+  document.getElementById('range').textContent =
+    `School year: ${iso(FIRST_DAY).replace(/, \d{4}$/,'')} — ${iso(LAST_DAY).replace(/^[A-Za-z]+, /,'')}`;
+}
+
+/* ===== Settings modal logic ===== */
+const $ = s => document.querySelector(s);
+function openSettings(){
+  $('#backdrop').style.display = 'flex';
+  $('#ovDate').value = toKey(new Date());
+  $('#ovKind').value = 'DEFAULT';
+  $('#ovCustom').value = '';
+  refreshOvList();
+}
+function closeSettings(){ $('#backdrop').style.display = 'none'; }
+function refreshOvList(){
+  const ov = loadOverrides();
+  const list = $('#ovList'); list.innerHTML = '';
+  const keys = Object.keys(ov).sort();
+  if(keys.length===0){ list.innerHTML = '<span class="muted">No overrides saved.</span>'; return; }
+  for(const k of keys){
+    const pill = document.createElement('div');
+    pill.className = 'pill';
+    pill.innerHTML = `<strong>${k}</strong> — ${ov[k].slice(0,60)} ${ov[k].length>60?'…':''}`;
+    const btn = document.createElement('button'); btn.textContent='Remove';
+    btn.onclick = () => { const o = loadOverrides(); delete o[k]; saveOverrides(o); refreshOvList(); render(); };
+    pill.appendChild(btn);
+    list.appendChild(pill);
+  }
+}
+
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('closeModal').addEventListener('click', closeSettings);
+document.getElementById('backdrop').addEventListener('click', (e)=>{ if(e.target.id==='backdrop') closeSettings(); });
+document.getElementById('ovAdd').addEventListener('click', ()=>{
+  const date = document.getElementById('ovDate').value;
+  const kind = document.getElementById('ovKind').value;
+  if(!date) return alert('Pick a date');
+  let val = kind;
+  if(kind==='CUSTOM'){
+    try{
+      const parsed = JSON.parse(document.getElementById('ovCustom').value || '[]');
+      if(!Array.isArray(parsed) || parsed.length===0) throw 0;
+      val = 'CUSTOM:' + JSON.stringify(parsed);
+    }catch{ return alert('Custom schedule must be a non-empty JSON array of periods.'); }
+  }
+  const o = loadOverrides(); o[date] = val; saveOverrides(o);
+  refreshOvList(); render();
+});
+document.getElementById('ovClear').addEventListener('click', ()=>{ if(confirm('Clear ALL overrides on this device?')){ saveOverrides({}); refreshOvList(); render(); }});
+
+/* ===== Boot ===== */
+document.getElementById('refreshBtn').addEventListener('click', render);
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const now = new Date(); now.setSeconds(0,0);
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const daysExclToday = fullDaysAfterToday(today);
+  const periodsToday  = (todayStatus(today)[0] === "School day") ? remainingPeriodsToday(now) : 0;
+  const lines = [];
+  lines.push(`${daysExclToday} days and ${periodsToday} periods left`);
+  const [status] = todayStatus(today);
+  lines.push(`Today: ${status} (${iso(today)})`);
+  lines.push(document.getElementById('next').textContent);
+  lines.push(document.getElementById('range').textContent);
+  navigator.clipboard?.writeText(lines.join("\n"));
+});
+
+// Load JSON, then render
+Promise.all([
+  loadJSON(FILE_NON_ATTENDANCE),
+  loadJSON(FILE_LATE_WEDS),
+  loadJSON(FILE_LATE_1010)
+]).then(([na, weds, la1010])=>{
+  rebuildNaMap(na||[]);
+  LATE_WEDS = buildSet(weds);
+  LATE_1010 = buildSet(la1010);
+  render();
+});
+
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>
