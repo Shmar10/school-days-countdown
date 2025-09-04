@@ -21,14 +21,15 @@
       color:var(--fg);
     }
     @keyframes hue{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-    .wrap{max-width:980px;margin:0 auto;padding:18px}
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    @media (max-width:480px){ .wrap{padding:12px} }
     .brand{color:#fff;letter-spacing:.08em;font-weight:800;text-transform:uppercase;margin:0 0 8px;opacity:.9;font-size:14px}
     .card{
       background:var(--card); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
       border:1px solid var(--border); border-radius:18px; box-shadow:0 14px 40px rgba(0,0,0,.18);
       padding:16px 16px 14px;
     }
-    h1{font-size:clamp(26px,6.2vw,56px);line-height:1.07;margin:0 0 6px;font-weight:900;letter-spacing:-.02em}
+    h1{font-size:clamp(24px,6.2vw,56px);line-height:1.07;margin:0 0 6px;font-weight:900;letter-spacing:-.02em}
     .sub{font-size:clamp(14px,2.6vw,18px);color:#0b1220;opacity:.95;line-height:1.25}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
     @media (max-width:780px){.grid{grid-template-columns:1fr}}
@@ -37,6 +38,9 @@
     .chip{background:var(--chip);color:var(--chipText);border-radius:999px;padding:6px 10px;border:1px solid var(--border);font-size:12px;line-height:1}
     .chip.past{background:var(--chipPast)}
     .chip.now{background:var(--chipNow);font-weight:700}
+    @media (max-width:480px){
+      .chip{font-size:11px;padding:5px 8px}
+    }
     .small{font-size:12px;margin-top:10px;color:#0b1220}
     .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
     button{font-size:14px;padding:6px 10px;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer}
@@ -53,13 +57,20 @@
     input,select,textarea{width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px}
     textarea{min-height:120px}
 
-    /* Form builder */
+    /* Compact 9-period builder */
     .builder{margin-top:12px;border:1px solid #e5e7eb;border-radius:12px;padding:10px}
     .builder h4{margin:0 0 8px}
-    .bgrid{display:grid;grid-template-columns:minmax(70px,120px) 1fr 1fr;gap:8px;align-items:center}
-    .bgrid > div{display:contents}
-    .bgrid .hdr{font-size:12px;color:#6b7280}
-    .bgrid input[type="time"]{min-width:120px}
+    .bgrid{display:grid;grid-template-columns:58px 1fr;gap:8px;align-items:center}
+    .bhead{display:contents}
+    .bhead div{font-size:12px;color:#6b7280}
+    .brow{display:contents}
+    .plabel{justify-self:center;font-weight:700}
+    .times{display:flex;align-items:center;gap:8px}
+    .times input[type="time"]{width:120px;min-width:110px}
+    .dash{opacity:.5}
+    @media (max-width:420px){
+      .times input[type="time"]{width:110px}
+    }
     .bbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
     .muted{color:#6b7280}
   </style>
@@ -123,21 +134,21 @@
         <textarea id="ovCustom" placeholder='[{"id":"01","label":"P1","start":"9:00","end":"9:35","include":true},{"id":"02","label":"P2","start":"9:40","end":"10:15","include":true}]'></textarea>
       </div>
 
-      <!-- Visual 9-period builder -->
+      <!-- Compact 9-period builder -->
       <div class="builder">
         <h4>Build a 9-period schedule</h4>
         <div class="bgrid" id="bgrid">
-          <div class="hdr">Period</div><div class="hdr">Start</div><div class="hdr">End</div>
+          <div class="bhead"><div>P</div><div>Start — End</div></div>
           <!-- rows injected by JS -->
         </div>
         <div class="bbtns">
           <button id="bLoadDefault">Load Default</button>
           <button id="bLoadWed">Load Wed 9:40</button>
           <button id="bLoad1010">Load 10:10</button>
-          <button id="bClear">Clear times</button>
-          <button id="bBuild">Build JSON from form →</button>
+          <button id="bClear">Clear</button>
+          <button id="bBuild">Use times → Fill JSON</button>
         </div>
-        <p class="muted" style="margin:8px 0 0">Tip: you can edit period labels in the JSON box above if you need “Block 1” etc.</p>
+        <p class="muted" style="margin:8px 0 0">Labels will default to <strong>P1</strong>…<strong>P9</strong>. Edit labels in the JSON box if you need custom names.</p>
       </div>
 
       <div class="btns" style="margin-top:10px">
@@ -168,38 +179,38 @@ const LAST_DAY  = new Date(2026, 4, 21); // May 21, 2026
    ===================== */
 const SCHEDULES = {
   DEFAULT: [
-    { id:"01", label:"Period 01", start:[8,10],  end:[8,52],  include:true },
-    { id:"02", label:"Period 02", start:[8,57],  end:[9,39],  include:true },
-    { id:"03", label:"Period 03", start:[9,44],  end:[10,26], include:true },
+    { id:"01", label:"P1", start:[8,10],  end:[8,52],  include:true },
+    { id:"02", label:"P2", start:[8,57],  end:[9,39],  include:true },
+    { id:"03", label:"P3", start:[9,44],  end:[10,26], include:true },
     { id:"HR", label:"Homeroom",  start:[10,31], end:[10,41], include:false },
-    { id:"04", label:"Period 04", start:[10,46], end:[11,28], include:true },
-    { id:"05", label:"Period 05", start:[11,33], end:[12,15], include:true },
-    { id:"06", label:"Period 06", start:[12,20], end:[13,2],  include:true },
-    { id:"07", label:"Period 07", start:[13,7],  end:[13,49], include:true },
-    { id:"08", label:"Period 08", start:[13,54], end:[14,36], include:true },
-    { id:"09", label:"Period 09", start:[14,41], end:[15,23], include:true }
+    { id:"04", label:"P4", start:[10,46], end:[11,28], include:true },
+    { id:"05", label:"P5", start:[11,33], end:[12,15], include:true },
+    { id:"06", label:"P6", start:[12,20], end:[13,2],  include:true },
+    { id:"07", label:"P7", start:[13,7],  end:[13,49], include:true },
+    { id:"08", label:"P8", start:[13,54], end:[14,36], include:true },
+    { id:"09", label:"P9", start:[14,41], end:[15,23], include:true }
   ],
   WED_LATE: [
-    { id:"01", label:"Period 01", start:[9,40],  end:[10,14], include:true },
-    { id:"02", label:"Period 02", start:[10,19], end:[10,52], include:true },
-    { id:"03", label:"Period 03", start:[10,57], end:[11,31], include:true },
-    { id:"04", label:"Period 04", start:[11,36], end:[12,10], include:true },
-    { id:"05", label:"Period 05", start:[12,15], end:[12,49], include:true },
-    { id:"06", label:"Period 06", start:[12,54], end:[13,28], include:true },
-    { id:"07", label:"Period 07", start:[13,33], end:[14,7],  include:true },
-    { id:"08", label:"Period 08", start:[14,12], end:[14,45], include:true },
-    { id:"09", label:"Period 09", start:[14,50], end:[15,23], include:true }
+    { id:"01", label:"P1", start:[9,40],  end:[10,14], include:true },
+    { id:"02", label:"P2", start:[10,19], end:[10,52], include:true },
+    { id:"03", label:"P3", start:[10,57], end:[11,31], include:true },
+    { id:"04", label:"P4", start:[11,36], end:[12,10], include:true },
+    { id:"05", label:"P5", start:[12,15], end:[12,49], include:true },
+    { id:"06", label:"P6", start:[12,54], end:[13,28], include:true },
+    { id:"07", label:"P7", start:[13,33], end:[14,7],  include:true },
+    { id:"08", label:"P8", start:[14,12], end:[14,45], include:true },
+    { id:"09", label:"P9", start:[14,50], end:[15,23], include:true }
   ],
   LATE_ARRIVAL_1010: [
-    { id:"01", label:"Period 01", start:[10,10], end:[10,41], include:true },
-    { id:"02", label:"Period 02", start:[10,46], end:[11,16], include:true },
-    { id:"03", label:"Period 03", start:[11,21], end:[11,51], include:true },
-    { id:"04", label:"Period 04", start:[11,56], end:[12,26], include:true },
-    { id:"05", label:"Period 05", start:[12,31], end:[13,2],  include:true },
-    { id:"06", label:"Period 06", start:[13,7],  end:[13,37], include:true },
-    { id:"07", label:"Period 07", start:[13,42], end:[14,12], include:true },
-    { id:"08", label:"Period 08", start:[14,17], end:[14,47], include:true },
-    { id:"09", label:"Period 09", start:[14,52], end:[15,23], include:true }
+    { id:"01", label:"P1", start:[10,10], end:[10,41], include:true },
+    { id:"02", label:"P2", start:[10,46], end:[11,16], include:true },
+    { id:"03", label:"P3", start:[11,21], end:[11,51], include:true },
+    { id:"04", label:"P4", start:[11,56], end:[12,26], include:true },
+    { id:"05", label:"P5", start:[12,31], end:[13,2],  include:true },
+    { id:"06", label:"P6", start:[13,7],  end:[13,37], include:true },
+    { id:"07", label:"P7", start:[13,42], end:[14,12], include:true },
+    { id:"08", label:"P8", start:[14,17], end:[14,47], include:true },
+    { id:"09", label:"P9", start:[14,52], end:[15,23], include:true }
   ]
 };
 
@@ -395,7 +406,9 @@ function render(){
     `School year: ${iso(FIRST_DAY).replace(/, \\d{4}$/,'')} — ${iso(LAST_DAY).replace(/^[A-Za-z]+, /,'')}`;
 }
 
-/* ===== Settings modal logic ===== */
+/* =====================
+   Settings modal logic
+   ===================== */
 const $ = s => document.querySelector(s);
 
 function openSettings(){
@@ -415,7 +428,6 @@ function refreshOvList(){
   if(keys.length===0){ list.innerHTML = '<span class="muted">No overrides saved.</span>'; return; }
   for(const k of keys){
     const pill = document.createElement('div');
-    pill.className = 'pill';
     pill.style.display = 'inline-flex';
     pill.style.alignItems = 'center';
     pill.style.gap = '6px';
@@ -453,19 +465,22 @@ document.getElementById('ovAdd').addEventListener('click', ()=>{
 });
 document.getElementById('ovClear').addEventListener('click', ()=>{ if(confirm('Clear ALL overrides on this device?')){ saveOverrides({}); refreshOvList(); render(); }});
 
-/* ===== Form builder (9 periods) ===== */
+/* ===== Form builder (compact, P1–P9) ===== */
 function buildFormRows(){
   const host = document.getElementById('bgrid');
-  // if already built, skip
-  if(host.querySelector('[data-row="01"]')) return;
+  // If rows already exist, skip
+  if(host.querySelector('.brow')) return;
   for (let i=1;i<=9;i++){
     const id = String(i).padStart(2,'0');
     const row = document.createElement('div');
-    row.setAttribute('data-row', id);
+    row.className = 'brow';
     row.innerHTML = `
-      <div><strong>Period ${id}</strong></div>
-      <div><input type="time" id="bStart${id}" required></div>
-      <div><input type="time" id="bEnd${id}" required></div>
+      <div class="plabel">P${i}</div>
+      <div class="times">
+        <input type="time" id="bStart${id}" step="60" placeholder="--:--">
+        <span class="dash">—</span>
+        <input type="time" id="bEnd${id}" step="60" placeholder="--:--">
+      </div>
     `;
     host.appendChild(row);
   }
@@ -499,8 +514,8 @@ function buildJsonFromForm(){
     const id = String(i).padStart(2,'0');
     const s = document.getElementById('bStart'+id)?.value || '';
     const e = document.getElementById('bEnd'+id)?.value || '';
-    if(!s || !e){ continue; } // allow partial; you can finish later
-    rows.push({ id, label:`Period ${id}`, start:s, end:e, include:true });
+    if(!s || !e){ continue; }
+    rows.push({ id, label:`P${i}`, start:s, end:e, include:true });
   }
   if(rows.length === 0){
     alert('Enter at least one start/end time.');
@@ -509,6 +524,7 @@ function buildJsonFromForm(){
   const box = document.getElementById('ovCustom');
   box.value = JSON.stringify(rows, null, 2);
   document.getElementById('ovKind').value = 'CUSTOM';
+  box.scrollIntoView({behavior:'smooth', block:'center'});
   box.focus();
 }
 
