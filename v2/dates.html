@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NN Vikings — Important Dates</title>
+  <meta name="theme-color" content="#6b21a8">
+  <link rel="icon" href="icons/icon-192.png">
+  <style>
+    :root{--bg1:#6b21a8;--bg2:#9333ea;--card:#ffffffea;--border:#e7e7ef;--fg:#0b1220;--muted:#6b7280}
+    *{box-sizing:border-box} html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu}
+    body{background:linear-gradient(135deg,var(--bg1),var(--bg2));background-size:200% 200%;animation:hue 16s ease-in-out infinite}
+    @keyframes hue{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    .wrap{max-width:900px;margin:0 auto;padding:16px}
+    .card{background:var(--card);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,.16);padding:14px}
+    .top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}
+    a.btn{display:inline-flex;gap:6px;align-items:center;padding:8px 12px;border:1px solid var(--border);background:#fff;border-radius:10px;text-decoration:none;color:#111}
+    h1{margin:4px 0 8px;font-size:clamp(22px,5.5vw,40px);line-height:1.1;color:#111;font-weight:900;letter-spacing:-.01em}
+    .sec{margin-top:12px;padding-top:8px;border-top:1px solid var(--border)}
+    .sec h2{margin:0 0 6px;font-size:16px;color:#111;letter-spacing:.02em}
+    .list{display:flex;flex-direction:column;gap:8px}
+    .item{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+    .tag{flex:0 0 auto;min-width:92px;color:#6b7280;font-weight:600}
+    .date{font-weight:600;color:#111}
+    .note{color:var(--muted)}
+    @media (max-width:520px){ .item{flex-direction:column}.tag{min-width:auto} }
+    .muted{color:#374151;opacity:.85}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="top">
+        <a class="btn" href="./index.html">← Back</a>
+        <span class="muted">NN Vikings</span>
+      </div>
+      <h1>Important Dates</h1>
+
+      <div id="summary" class="sec"></div>
+
+      <div class="sec">
+        <h2>Student Non-Attendance Days</h2>
+        <div id="na" class="list"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Late Start Wednesdays (9:40)</h2>
+        <div id="weds" class="list"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Late Arrival Day (10:10)</h2>
+        <div id="late1010" class="list"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Early Release</h2>
+        <div id="early" class="list"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Marking Periods</h2>
+        <div id="marks" class="list"></div>
+      </div>
+
+      <div class="sec">
+        <h2>Open House & Parent-Teacher Conferences</h2>
+        <div id="ptc" class="list"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* Files in /v2 */
+const FILE_NON_ATT = 'non_attendance.json';
+const FILE_WEDS    = 'late_start_wednesdays.json';
+const FILE_LATE    = 'late_arrival_1010.json';
+const FILE_EARLY   = 'early_release_days.json';
+const FILE_MARKING = 'marking_periods.json';
+const FILE_PTC     = 'pt_events.json';
+
+/* School year (match index.html) */
+const FIRST_DAY = new Date(2025,7,12);
+const LAST_DAY  = new Date(2026,4,21);
+
+const isoLong = d => d.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'2-digit',year:'numeric'});
+const isoMD   = d => d.toLocaleDateString(undefined,{month:'short',day:'2-digit'});
+function parseISO(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); }
+async function get(url){ try{ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw 0; return r.json(); } catch{ return null; } }
+function li(container, left, main, note){
+  const row = document.createElement('div'); row.className='item';
+  if(left){ const t = document.createElement('div'); t.className='tag'; t.textContent = left; row.appendChild(t); }
+  const box = document.createElement('div');
+  const a = document.createElement('div'); a.className='date'; a.textContent = main; box.appendChild(a);
+  if(note){ const b = document.createElement('div'); b.className='note'; b.textContent = note; box.appendChild(b); }
+  row.appendChild(box); container.appendChild(row);
+}
+
+function rangeText(sISO, eISO){
+  const s=parseISO(sISO), e=parseISO(eISO);
+  return (sISO===eISO) ? isoLong(s) : `${isoMD(s)} – ${isoMD(e)} (${s.getFullYear()!==e.getFullYear()?e.getFullYear():''})`;
+}
+
+(async ()=>{
+  // Summary
+  const sum = document.getElementById('summary');
+  sum.innerHTML = `
+    <div class="item">
+      <div class="tag">School Year</div>
+      <div><div class="date">${isoLong(FIRST_DAY)} — ${isoLong(LAST_DAY)}</div>
+      <div class="note">Last day of school: ${isoLong(LAST_DAY)}</div></div>
+    </div>`;
+
+  // Non-attendance
+  const naData = await get(FILE_NON_ATT) || [];
+  const na = document.getElementById('na');
+  naData.forEach(x => li(na, x.label, rangeText(x.start, x.end)));
+
+  // Late-start Wednesdays (9:40)
+  const wedsData = await get(FILE_WEDS) || [];
+  const weds = document.getElementById('weds');
+  wedsData.map(parseISO).sort((a,b)=>a-b)
+    .forEach(d => li(weds, '9:40 AM', isoLong(d)));
+
+  // Late arrival 10:10
+  const lateData = await get(FILE_LATE) || [];
+  const late = document.getElementById('late1010');
+  (lateData.length ? lateData : []).map(parseISO).sort((a,b)=>a-b)
+    .forEach(d => li(late, '10:10 AM', isoLong(d)));
+
+  // Early release
+  const earlyData = await get(FILE_EARLY) || [];
+  const early = document.getElementById('early');
+  earlyData.forEach(e => li(early, e.time || '2:11 PM', isoLong(parseISO(e.date)), e.title || 'Early release'));
+
+  // Marking periods
+  const mpData = await get(FILE_MARKING) || [];
+  const mp = document.getElementById('marks');
+  mpData.forEach(p => li(mp, p.title, `${rangeText(p.start,p.end)}`, p.note || ''));
+
+  // PTC / Open House
+  const ptcData = await get(FILE_PTC) || [];
+  const ptc = document.getElementById('ptc');
+  ptcData.forEach(ev => li(ptc, ev.time || '', `${isoLong(parseISO(ev.date))}`, ev.title));
+})();
+</script>
+</body>
+</html>
