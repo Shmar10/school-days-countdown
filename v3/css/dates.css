@@ -1,0 +1,10 @@
+/* Extra styling just for dates.html (shared base styles are in app.css) */
+.topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sec{margin-top:12px;padding-top:8px;border-top:1px solid #e5e7eb}
+.sec h2{margin:0 0 6px;font-size:16px;color:#111;letter-spacing:.02em}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px}
+.tag{flex:0 0 auto;min-width:112px;color:#6b7280;font-weight:600}
+.date{font-weight:600;color:#111}
+.note{color:#6b7280}
+@media (max-width:560px){ .item{flex-direction:column}.tag{min-width:auto} }
