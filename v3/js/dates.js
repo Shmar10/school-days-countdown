@@ -10,20 +10,28 @@ const FILES = {
   PTC:     'data/pt_events.json'
 };
 
-const $ = s => document.querySelector(s);
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const today0 = (()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; })();
 
 async function get(url){
-  try{ const r = await fetch(url, {cache:'no-store'}); if(!r.ok) throw 0; return r.json(); }
+  try{ const r = await fetch(url,{cache:'no-store'}); if(!r.ok) throw 0; return r.json(); }
   catch{ return null; }
 }
 
-function addRow(host, left, main, note=''){
+function addRow(host, opts){
+  // opts: {left, main, note, startISO, endISO}
   const row = document.createElement('div'); row.className='item';
-  if(left){ const t=document.createElement('div'); t.className='tag'; t.textContent=left; row.appendChild(t); }
-  const box = document.createElement('div');
-  const a = document.createElement('div'); a.className='date'; a.textContent = main; box.appendChild(a);
-  if(note){ const b = document.createElement('div'); b.className='note'; b.textContent = note; box.appendChild(b); }
-  row.appendChild(box); host.appendChild(row);
+  const start = opts.startISO ? parseISO(opts.startISO) : null;
+  const end   = opts.endISO   ? parseISO(opts.endISO)   : start;
+  row.dataset.start = start ? +start : '';
+  row.dataset.end   = end   ? +end   : '';
+  if(opts.left){ const t=document.createElement('div'); t.className='tag'; t.textContent=opts.left; row.appendChild(t); }
+  const box=document.createElement('div');
+  const a=document.createElement('div'); a.className='date'; a.textContent = opts.main; box.appendChild(a);
+  if(opts.note){ const b=document.createElement('div'); b.className='note'; b.textContent = opts.note; box.appendChild(b); }
+  row.appendChild(box);
+  host.appendChild(row);
 }
 
 function rangeText(sISO, eISO){
@@ -32,39 +40,91 @@ function rangeText(sISO, eISO){
   return (sISO===eISO) ? isoLong(s) : `${isoMD(s)} – ${isoMD(e)}${s.getFullYear()!==e.getFullYear()?` ${e.getFullYear()}`:''}`;
 }
 
+function setBadge(id){
+  const list = $(`#${id}`);
+  const count = list ? list.querySelectorAll('.item:not([hidden])').length : 0;
+  const badge = $(`#badge-${id}`);
+  if(badge) badge.textContent = count;
+}
+
+function applyFilter(mode){
+  const isUpcoming = (startMs,endMs) => (endMs >= +today0);
+  const isPast     = (startMs,endMs) => (endMs <  +today0);
+
+  ['na','weds','late1010','early','marks','ptc'].forEach(id=>{
+    const items = $(`#${id}`)?.children || [];
+    for(const el of items){
+      const start = Number(el.dataset.start || el.dataset.end || 0);
+      const end   = Number(el.dataset.end   || el.dataset.start || 0);
+
+      let show = true;
+      if(mode==='upcoming') show = isUpcoming(start,end);
+      if(mode==='past')     show = isPast(start,end);
+
+      el.hidden = !show;
+    }
+    setBadge(id);
+  });
+}
+
+function wireFilters(){
+  $$('.filter-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilter(btn.dataset.mode);
+    });
+  });
+  $('#expandAll').addEventListener('click', ()=> $$('details.sec').forEach(d=>d.open=true));
+  $('#collapseAll').addEventListener('click', ()=> $$('details.sec').forEach(d=>d.open=false));
+}
+
 (async function boot(){
   // Summary
-  const summary = $('#summary');
-  addRow(summary, 'First Day', isoLong(FIRST_DAY));
-  addRow(summary, 'Last Day',  isoLong(LAST_DAY));
+  addRow($('#summary'), {left:'First Day', main: isoLong(FIRST_DAY)});
+  addRow($('#summary'), {left:'Last Day',  main: isoLong(LAST_DAY)});
 
   // Non-attendance
   const na = await get(FILES.NON_ATT) || [];
-  const naHost = $('#na');
-  na.forEach(x => addRow(naHost, x.label, rangeText(x.start, x.end)));
+  na.forEach(x => addRow($('#na'), {left:x.label, main:rangeText(x.start,x.end), startISO:x.start, endISO:x.end}));
 
-  // Late-start Wednesdays
+  // Late-start Wednesdays (single dates)
   const weds = (await get(FILES.WEDS) || []).map(parseISO).sort((a,b)=>a-b);
-  const wedsHost = $('#weds');
-  weds.forEach(d => addRow(wedsHost, '9:40 AM', isoLong(d)));
+  weds.forEach(d => addRow($('#weds'), {left:'9:40 AM', main:isoLong(d), startISO:d.toISOString().slice(0,10)}));
 
-  // Late arrival 10:10
+  // Late arrival 10:10 (single date list)
   const la = (await get(FILES.LATE) || []).map(parseISO).sort((a,b)=>a-b);
-  const laHost = $('#late1010');
-  la.forEach(d => addRow(laHost, '10:10 AM', isoLong(d)));
+  la.forEach(d => addRow($('#late1010'), {left:'10:10 AM', main:isoLong(d), startISO:d.toISOString().slice(0,10)}));
 
-  // Early release
+  // Early release (single dates)
   const early = await get(FILES.EARLY) || [];
-  const earlyHost = $('#early');
-  early.forEach(e => addRow(earlyHost, e.time || 'Dismissal', isoLong(parseISO(e.date)), e.title || ''));
+  early.forEach(e => addRow($('#early'), {
+    left: e.time || 'Dismissal',
+    main: isoLong(parseISO(e.date)),
+    note: e.title || '',
+    startISO: e.date
+  }));
 
-  // Marking periods
+  // Marking periods (ranges)
   const marks = await get(FILES.MARKS) || [];
-  const marksHost = $('#marks');
-  marks.forEach(m => addRow(marksHost, m.title, rangeText(m.start, m.end), m.note || ''));
+  marks.forEach(m => addRow($('#marks'), {
+    left: m.title,
+    main: rangeText(m.start, m.end),
+    note: m.note || '',
+    startISO: m.start, endISO: m.end
+  }));
 
-  // PTC / Open House
-  const ptc = await get(FILES.PTC) || [];
-  const ptcHost = $('#ptc');
-  ptc.forEach(ev => addRow(ptcHost, ev.time || '', isoLong(parseISO(ev.date)), ev.title || ''));
+  // PTC/Open House (single dates)
+  const pt = await get(FILES.PTC) || [];
+  pt.forEach(ev => addRow($('#ptc'), {
+    left: ev.time || '',
+    main: isoLong(parseISO(ev.date)),
+    note: ev.title || '',
+    startISO: ev.date
+  }));
+
+  // Initial badges + filter
+  ['na','weds','late1010','early','marks','ptc'].forEach(setBadge);
+  wireFilters();
+  applyFilter('upcoming'); // default view
 })();
