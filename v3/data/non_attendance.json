@@ -1,0 +1,12 @@
+[
+  { "label": "Teacher Institute",            "start": "2025-08-11", "end": "2025-08-11" },
+  { "label": "Labor Day",                    "start": "2025-09-01", "end": "2025-09-01" },
+  { "label": "Indigenous Peoples Day",       "start": "2025-10-13", "end": "2025-10-13" },
+  { "label": "Teacher Institute",            "start": "2025-10-31", "end": "2025-10-31" },
+  { "label": "Thanksgiving Break",           "start": "2025-11-26", "end": "2025-11-28" },
+  { "label": "Winter Break",                 "start": "2025-12-22", "end": "2026-01-02" },
+  { "label": "Martin Luther King Day",       "start": "2026-01-19", "end": "2026-01-19" },
+  { "label": "Presidents’ Day",              "start": "2026-02-16", "end": "2026-02-16" },
+  { "label": "Teacher Institute",            "start": "2026-03-13", "end": "2026-03-13" },
+  { "label": "Spring Break",                 "start": "2026-03-30", "end": "2026-04-03" }
+]
