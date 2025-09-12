@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NN Vikings — School Days & Periods (v3)</title>
+  <meta name="theme-color" content="#6b21a8">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="wrap">
+    <h3 class="brand">NN Vikings</h3>
+
+    <div class="card">
+      <h1 id="topline">Loading…</h1>
+
+      <div class="grid">
+        <div class="row sub" id="today"></div>
+        <div class="row sub" id="next"></div>
+      </div>
+
+      <div class="row sub" id="modeRow"></div>
+      <div class="chips" id="chips"></div>
+
+      <div class="btns">
+        <button id="refreshBtn">Refresh now</button>
+        <button id="copyBtn">Copy details</button>
+        <button id="settingsBtn">⚙️ Settings</button>
+        <a href="./dates.html" class="as-btn">📅 View important dates</a>
+      </div>
+
+      <div class="small" id="range"></div>
+    </div>
+  </div>
+
+  <!-- Settings modal -->
+  <div class="backdrop" id="backdrop" hidden>
+    <div class="modal">
+      <div class="modal-body">
+        <h3>Special day overrides</h3>
+        <p class="small" style="margin-top:0">
+          Add one-off dates with a different schedule. Stored locally in your browser.
+        </p>
+
+        <div class="row2">
+          <div>
+            <label for="ovDate">Date</label>
+            <input id="ovDate" type="date">
+          </div>
+          <div>
+            <label for="ovKind">Schedule</label>
+            <select id="ovKind">
+              <option value="DEFAULT">Default (regular)</option>
+              <option value="WED_LATE">Late Start (9:40)</option>
+              <option value="LATE_ARRIVAL_1010">Late Arrival (10:10)</option>
+              <option value="CUSTOM">Custom (paste or build)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:8px">
+          <label for="ovCustom">Custom schedule JSON (array of periods).
+            Example:
+            <code>[
+              {"id":"01","label":"P1","start":"9:00","end":"9:35","include":true},
+              {"id":"02","label":"P2","start":"9:40","end":"10:15","include":true}
+            ]</code>
+          </label>
+          <textarea id="ovCustom" placeholder='[]'></textarea>
+        </div>
+
+        <div class="builder">
+          <h4>Build a 9-period schedule</h4>
+          <div class="bgrid" id="bgrid">
+            <div class="bhead"><div>P</div><div>Start — End</div></div>
+            <!-- rows injected -->
+          </div>
+          <div class="btns" style="margin-top:8px">
+            <button id="bLoadDefault">Load Default</button>
+            <button id="bLoadWed">Load Wed 9:40</button>
+            <button id="bLoad1010">Load 10:10</button>
+            <button id="bClear">Clear</button>
+            <button id="bBuild">Use times → Fill JSON</button>
+          </div>
+          <p class="muted" style="margin:8px 0 0">Labels default to <strong>P1</strong>…<strong>P9</strong>.</p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <button id="ovAdd">Add / Update</button>
+        <button id="ovClear">Clear all overrides</button>
+        <button id="closeModal">Close</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="ovList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
