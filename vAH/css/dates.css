@@ -1,0 +1,29 @@
+/* Top controls */
+.topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
+.filters .spacer{flex:1}
+.filter-btn,.mini-btn{
+  padding:6px 10px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;cursor:pointer;
+  font-size:13px;line-height:1;display:inline-flex;align-items:center
+}
+.filter-btn.active{background:#ede9fe;border-color:#ddd6fe;font-weight:700}
+
+/* Sections */
+.sec{margin-top:12px;padding-top:8px;border-top:1px solid #e5e7eb}
+.sec h2{margin:0;font-size:16px;color:#111;letter-spacing:.02em}
+
+/* Make details/summary look nice */
+details.sec > summary{
+  list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;margin-bottom:6px
+}
+details.sec > summary::-webkit-details-marker{display:none}
+.badge{margin-left:auto;background:#111;color:#fff;border-radius:999px;font-size:11px;line-height:1;
+  padding:4px 8px}
+
+/* Items */
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px}
+.tag{flex:0 0 auto;min-width:112px;color:#6b7280;font-weight:600}
+.date{font-weight:600;color:#111}
+.note{color:#6b7280}
+@media (max-width:560px){ .item{flex-direction:column}.tag{min-width:auto} }

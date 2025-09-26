@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NN Vikings — Important Dates (v3)</title>
+  <meta name="theme-color" content="#6b21a8">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/dates.css">
+</head>
+<body>
+  <div class="wrap">
+    <h3 class="brand">NN Vikings</h3>
+
+    <div class="card">
+      <div class="topbar">
+        <a class="as-btn" href="./index.html">← Back</a>
+        <div class="filters">
+          <span class="muted">Show:</span>
+          <button class="filter-btn active" data-mode="upcoming">Upcoming</button>
+          <button class="filter-btn" data-mode="all">All</button>
+          <button class="filter-btn" data-mode="past">Past</button>
+          <span class="spacer"></span>
+          <button class="mini-btn" id="expandAll">Expand all</button>
+          <button class="mini-btn" id="collapseAll">Collapse all</button>
+        </div>
+      </div>
+
+      <h1>Important Dates</h1>
+
+      <section class="sec">
+        <h2>School Year</h2>
+        <div id="summary" class="list"></div>
+      </section>
+
+      <details class="sec" id="sec-na" open>
+        <summary><h2>Student Non-Attendance Days</h2><span class="badge" id="badge-na">0</span></summary>
+        <div id="na" class="list"></div>
+      </details>
+
+      <details class="sec" id="sec-weds" open>
+        <summary><h2>Late Start Wednesdays (9:40)</h2><span class="badge" id="badge-weds">0</span></summary>
+        <div id="weds" class="list"></div>
+      </details>
+
+      <details class="sec" id="sec-late1010" open>
+        <summary><h2>Late Arrival Day (10:10)</h2><span class="badge" id="badge-late1010">0</span></summary>
+        <div id="late1010" class="list"></div>
+      </details>
+
+      <details class="sec" id="sec-early" open>
+        <summary><h2>Early Release</h2><span class="badge" id="badge-early">0</span></summary>
+        <div id="early" class="list"></div>
+      </details>
+
+      <details class="sec" id="sec-marks" open>
+        <summary><h2>Marking Periods</h2><span class="badge" id="badge-marks">0</span></summary>
+        <div id="marks" class="list"></div>
+      </details>
+
+      <details class="sec" id="sec-ptc" open>
+        <summary><h2>Open House & Parent-Teacher Conferences</h2><span class="badge" id="badge-ptc">0</span></summary>
+        <div id="ptc" class="list"></div>
+      </details>
+    </div>
+  </div>
+
+  <script type="module" src="js/dates.js"></script>
+</body>
+</html>
