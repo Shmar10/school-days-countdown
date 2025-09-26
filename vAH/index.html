@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NN Vikings — School Days & Periods (v3)</title>
-  <meta name="theme-color" content="#6b21a8">
+  <title>AH Wildcats — School Days & Periods</title>
+  <meta name="theme-color" content="#1e3a8a">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
   <div class="wrap">
-    <h3 class="brand">NN Vikings</h3>
+    <h3 class="brand">AH Wildcats</h3>
 
     <div class="card">
       <h1 id="topline">Loading…</h1>
-        <div class="small" id="calendarLeft"></div>  <!-- NEW: calendar days left -->
+      <div class="small" id="calendarLeft"></div>
 
       <div class="grid">
         <div class="row sub" id="today"></div>
@@ -36,7 +36,7 @@
     </div>
   </div>
 
-  <!-- Settings modal -->
+  <!-- Settings modal (unchanged structure) -->
   <div class="backdrop" id="backdrop" hidden>
     <div class="modal">
       <div class="modal-body">
@@ -54,8 +54,8 @@
             <label for="ovKind">Schedule</label>
             <select id="ovKind">
               <option value="DEFAULT">Default (regular)</option>
-              <option value="WED_LATE">Late Start (9:40)</option>
-              <option value="LATE_ARRIVAL_1010">Late Arrival (10:10)</option>
+              <option value="WED_LATE">Late Start</option>
+              <option value="LATE_ARRIVAL_1010">Late Arrival</option>
               <option value="CUSTOM">Custom (paste or build)</option>
             </select>
           </div>
@@ -65,22 +65,22 @@
           <label for="ovCustom">Custom schedule JSON (array of periods).
             Example:
             <code>[
-              {"id":"01","label":"P1","start":"9:00","end":"9:35","include":true},
-              {"id":"02","label":"P2","start":"9:40","end":"10:15","include":true}
+              {"id":"01","label":"P1","start":"08:00","end":"08:30","include":true},
+              {"id":"02","label":"P2","start":"08:33","end":"09:27","include":true}
             ]</code>
           </label>
-          <textarea id="ovCustom" placeholder='[]'></textarea>
+          <textarea id="ovCustom" placeholder="[]"></textarea>
         </div>
 
         <div class="builder">
           <h4>Build a 9-period schedule</h4>
           <div class="bgrid" id="bgrid">
             <div class="bhead"><div>P</div><div>Start — End</div></div>
-            <!-- rows injected -->
+            <!-- rows injected by settings.js -->
           </div>
           <div class="btns" style="margin-top:8px">
             <button id="bLoadDefault">Load Default</button>
-            <button id="bLoadWed">Load Wed 9:40</button>
+            <button id="bLoadWed">Load Wed</button>
             <button id="bLoad1010">Load 10:10</button>
             <button id="bClear">Clear</button>
             <button id="bBuild">Use times → Fill JSON</button>
