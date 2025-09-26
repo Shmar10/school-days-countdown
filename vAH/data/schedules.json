@@ -1,36 +1,15 @@
 {
   "DEFAULT": [
-    {"id":"01","label":"P1","start":[8,10],"end":[8,52],"include":true},
-    {"id":"02","label":"P2","start":[8,57],"end":[9,39],"include":true},
-    {"id":"03","label":"P3","start":[9,44],"end":[10,26],"include":true},
-    {"id":"HR","label":"Homeroom","start":[10,31],"end":[10,41],"include":false},
-    {"id":"04","label":"P4","start":[10,46],"end":[11,28],"include":true},
-    {"id":"05","label":"P5","start":[11,33],"end":[12,15],"include":true},
-    {"id":"06","label":"P6","start":[12,20],"end":[13,2],"include":true},
-    {"id":"07","label":"P7","start":[13,7],"end":[13,49],"include":true},
-    {"id":"08","label":"P8","start":[13,54],"end":[14,36],"include":true},
-    {"id":"09","label":"P9","start":[14,41],"end":[15,23],"include":true}
+    {"id":"01","label":"P1","start":[8,0],"end":[8,30],"include":true},
+    {"id":"02","label":"P2","start":[8,33],"end":[9,27],"include":true},
+    {"id":"03","label":"P3","start":[9,30],"end":[10,24],"include":true},
+    {"id":"04","label":"P4","start":[10,27],"end":[11,2],"include":true},
+    {"id":"05","label":"P5","start":[11,5],"end":[11,40],"include":true},
+    {"id":"06","label":"P6","start":[11,43],"end":[12,13],"include":true},
+    {"id":"07","label":"P7","start":[12,16],"end":[12,51],"include":true},
+    {"id":"08","label":"P8","start":[12,54],"end":[13,48],"include":true},
+    {"id":"09","label":"P9","start":[13,51],"end":[14,45],"include":true}
   ],
-  "WED_LATE": [
-    {"id":"01","label":"P1","start":[9,40],"end":[10,14],"include":true},
-    {"id":"02","label":"P2","start":[10,19],"end":[10,52],"include":true},
-    {"id":"03","label":"P3","start":[10,57],"end":[11,31],"include":true},
-    {"id":"04","label":"P4","start":[11,36],"end":[12,10],"include":true},
-    {"id":"05","label":"P5","start":[12,15],"end":[12,49],"include":true},
-    {"id":"06","label":"P6","start":[12,54],"end":[13,28],"include":true},
-    {"id":"07","label":"P7","start":[13,33],"end":[14,7],"include":true},
-    {"id":"08","label":"P8","start":[14,12],"end":[14,45],"include":true},
-    {"id":"09","label":"P9","start":[14,50],"end":[15,23],"include":true}
-  ],
-  "LATE_ARRIVAL_1010": [
-    {"id":"01","label":"P1","start":[10,10],"end":[10,41],"include":true},
-    {"id":"02","label":"P2","start":[10,46],"end":[11,16],"include":true},
-    {"id":"03","label":"P3","start":[11,21],"end":[11,51],"include":true},
-    {"id":"04","label":"P4","start":[11,56],"end":[12,26],"include":true},
-    {"id":"05","label":"P5","start":[12,31],"end":[13,2],"include":true},
-    {"id":"06","label":"P6","start":[13,7],"end":[13,37],"include":true},
-    {"id":"07","label":"P7","start":[13,42],"end":[14,12],"include":true},
-    {"id":"08","label":"P8","start":[14,17],"end":[14,47],"include":true},
-    {"id":"09","label":"P9","start":[14,52],"end":[15,23],"include":true}
-  ]
+  "WED_LATE": [],
+  "LATE_ARRIVAL_1010": []
 }
