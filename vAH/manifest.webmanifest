@@ -1,10 +1,10 @@
 {
-  "name": "NN Vikings v2 — School Days & Periods",
-  "short_name": "NN Vikings v2",
-  "start_url": ".",
+  "name": "AH Wildcats — School Days & Periods",
+  "short_name": "Wildcats Count",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#6b21a8",
-  "theme_color": "#6b21a8",
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a8a",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
