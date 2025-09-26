@@ -1,42 +1,44 @@
 import {oneDay, toKey, parseISO, dateRange, isWeekday, hm, isoLong, isoMD, plural} from './utils.js';
 
-/** ---- Config you’ll likely tweak per school ---- */
-export const FIRST_DAY = new Date(2025, 7, 12);   // Aug 12, 2025
-export const LAST_DAY  = new Date(2026, 4, 21);   // May 21, 2026
-export const INCLUDE_ONLY = null;                 // e.g., ["01","02",...]; otherwise all include:true
+/** ---- AH school year ---- */
+export const FIRST_DAY = new Date(2025, 7, 20);  // Aug 20, 2025
+export const LAST_DAY  = new Date(2026, 4, 28);  // May 28, 2026
+export const INCLUDE_ONLY = null;                // count all include:true periods
 
 /** ---- Runtime state ---- */
 export const state = {
-  schedules: {},          // from data/schedules.json
-  naMap: new Map(),       // +date -> label
-  lateWeds: new Set(),    // 'YYYY-MM-DD'
-  late1010: new Set(),    // 'YYYY-MM-DD'
+  schedules: {},
+  naMap: new Map(),
+  lateWeds: new Set(),
+  late1010: new Set(),
   overridesKey: 'sdc_overrides_v3'
 };
 
-async function loadJSON(url){
-  const r = await fetch(url, {cache:'no-store'});
-  if (!r.ok) throw new Error(`${url} ${r.status}`);
-  return r.json();
+async function loadJSON(url, fallback=null){
+  try{
+    const r = await fetch(url, {cache:'no-store'});
+    if (!r.ok) throw 0;
+    return await r.json();
+  }catch{
+    return fallback;
+  }
 }
 
 export async function initState(){
-  // Load data files
   const [
     schedules,
     nonAttendance,
     lateWeds,
     late1010
   ] = await Promise.all([
-    loadJSON('data/schedules.json'),
-    loadJSON('data/non_attendance.json'),
-    loadJSON('data/late_start_wednesdays.json'),
-    loadJSON('data/late_arrival_1010.json').catch(()=>[])
+    loadJSON('data/schedules.json', {DEFAULT:[], WED_LATE:[], LATE_ARRIVAL_1010:[]}),
+    loadJSON('data/non_attendance.json', []),
+    loadJSON('data/late_start_wednesdays.json', []),
+    loadJSON('data/late_arrival_1010.json', [])
   ]);
 
   state.schedules = schedules || {};
 
-  // build NA map
   state.naMap = new Map();
   (nonAttendance || []).forEach(item=>{
     const s = parseISO(item.start), e = parseISO(item.end);
@@ -47,15 +49,15 @@ export async function initState(){
   state.late1010 = new Set(late1010 || []);
 }
 
-/** ---- Overrides (localStorage) ---- */
+/** ---- Overrides ---- */
 export function getOverrides(){
   try { return JSON.parse(localStorage.getItem(state.overridesKey) || '{}'); }
   catch { return {}; }
 }
 function saveOverrides(obj){ localStorage.setItem(state.overridesKey, JSON.stringify(obj)); }
-export const setOverride = (dateKey, value) => { const o = getOverrides(); o[dateKey]=value; saveOverrides(o); };
-export const removeOverride = (dateKey) => { const o = getOverrides(); delete o[dateKey]; saveOverrides(o); };
-export const clearOverrides = () => saveOverrides({});
+export const setOverride   = (dateKey, value) => { const o = getOverrides(); o[dateKey]=value; saveOverrides(o); };
+export const removeOverride= (dateKey) => { const o = getOverrides(); delete o[dateKey]; saveOverrides(o); };
+export const clearOverrides= () => saveOverrides({});
 
 /** ---- Schedule selection & counters ---- */
 export function scheduleForDate(baseDate){
@@ -125,7 +127,6 @@ export function nextBreak(today = new Date()){
   return null;
 }
 
-/** ---- UI helpers used by main.js ---- */
 export function chipsForToday(now = new Date()){
   const base = scheduleForDate(now);
   const only = Array.isArray(INCLUDE_ONLY) ? new Set(INCLUDE_ONLY) : null;
@@ -145,8 +146,8 @@ export function modeBadgeForDate(d){
   const key = toKey(d);
   const ov = getOverrides();
   if (ov[key]) return ov[key].startsWith('CUSTOM:') ? 'Special (custom)' : `Special (${ov[key]})`;
-  if (state.late1010.has(key)) return 'Late Arrival (10:10)';
-  if (state.lateWeds.has(key)) return 'Late Start (9:40)';
+  if (state.late1010.has(key)) return 'Late Arrival';
+  if (state.lateWeds.has(key)) return 'Late Start';
   return '';
 }
 
