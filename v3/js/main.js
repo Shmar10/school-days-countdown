@@ -12,7 +12,8 @@ import {
   isoLong,
   isoMD,
   plural,
-  toKey
+  toKey,
+  allSchoolDays
 } from './state.js';
 import { openSettings, wireSettings } from './settings.js';
 import { oneDay, parseISO } from './utils.js';
@@ -26,20 +27,41 @@ let baseDateOverride = null;
    Helpers
 ----------------------------------------------*/
 
-// Calendar days left (weekends + holidays), excluding the base day, inclusive of LAST_DAY
+// Calendar days left (weekends + holidays), excluding the base day,
+// inclusive of LAST_DAY, and never counting before FIRST_DAY.
 function calendarDaysLeftExclBase(baseDay = new Date()) {
   const d0 = new Date(baseDay);
   d0.setHours(0, 0, 0, 0);
-  const start = new Date(+d0 + oneDay); // start tomorrow
+
+  // Start counting from "tomorrow" but clamp to FIRST_DAY
+  const start = new Date(Math.max(+d0 + oneDay, +FIRST_DAY));
   if (start > LAST_DAY) return 0;
-  return Math.floor((+LAST_DAY - +start) / oneDay) + 1; // inclusive of LAST_DAY
+
+  // Inclusive of LAST_DAY
+  return Math.floor((+LAST_DAY - +start) / oneDay) + 1;
 }
 
 function sameYMD(a, b) {
-  return a.getFullYear() === b.getFullYear() &&
-         a.getMonth() === b.getMonth() &&
-         a.getDate() === b.getDate();
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
+
+// Total number of school days in the year (Mon–Fri minus non-attendance)
+function totalSchoolDaysInYear() {
+  // allSchoolDays() already respects FIRST_DAY/LAST_DAY, weekends, and non-attendance
+  return allSchoolDays().length;
+}
+
+// Percent of school days remaining as of baseDay (excludes baseDay itself)
+function percentRemainingSchool(baseDay = new Date()) {
+  const left = fullDaysAfterToday(baseDay); // excludes the base day
+  const total = totalSchoolDaysInYear();
+  return total > 0 ? (left / total) * 100 : 0;
+}
+
 
 /* ---------------------------------------------
    Render
@@ -83,8 +105,9 @@ function render() {
 
   // Small line: calendar days left (weekends + holidays)
   const calLeft = calendarDaysLeftExclBase(baseDay);
+  const pctSchool = percentRemainingSchool(baseDay);
   const calEl = document.getElementById('calendarLeft');
-  if (calEl) calEl.textContent = `${calLeft} calendar days left`;
+  if (calEl) calEl.textContent = `${calLeft} calendar days left • ${pctSchool.toFixed(1)}% of school days remaining`;
 
   // "Today" / "Selected day"
   const [status] = todayStatus(baseDay);
@@ -163,7 +186,7 @@ function wire() {
 
     const lines = [];
     lines.push(`${daysExcl} days and ${periodsMetric} periods left`);
-    lines.push(`${calendarDaysLeftExclBase(baseDay)} calendar days left`);
+    lines.push(`${calendarDaysLeftExclBase(baseDay)} calendar days left • ${percentRemainingSchool(baseDay).toFixed(1)}% of school days remaining`);
     const label = isPreview ? 'Selected day' : 'Today';
     lines.push(`${label}: ${todayStatus(baseDay)[0]} (${isoLong(baseDay)})`);
     lines.push($('#next').textContent);
