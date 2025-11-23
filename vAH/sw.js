@@ -1,5 +1,5 @@
 // Cache version just for v2
-const CACHE = 'sdc-vAH2';
+const CACHE = 'sdc-vAH3';
 // Static assets (relative to /v2/)
 const ASSETS = [
   './',
