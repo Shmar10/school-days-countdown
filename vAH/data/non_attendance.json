@@ -7,8 +7,7 @@
   {"label":"Parent/Teacher Conferences (No School)","start":"2025-11-24","end":"2025-11-25"},
   {"label":"Thanksgiving Break","start":"2025-11-26","end":"2025-11-28"},
 
-  {"label":"Christmas Day","start":"2025-12-25","end":"2025-12-25"},
-  {"label":"New Year's Day","start":"2026-01-01","end":"2026-01-01"},
+  {"label": "Winter Break", "start": "2025-12-22", "end": "2026-01-02"},
   {"label":"Martin Luther King Jr. Day","start":"2026-01-19","end":"2026-01-19"},
   {"label":"Presidents' Day","start":"2026-02-16","end":"2026-02-16"},
 
